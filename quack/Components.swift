@@ -106,3 +106,81 @@ struct Pill: View {
     .padding()
     .background(Color.cream)
 }
+
+// MARK: - CTAButton
+enum CTAVariant { case ink, orange, ghost }
+
+struct CTAButton: View {
+    let label: String
+    var variant: CTAVariant = .ink
+    var disabled: Bool = false
+    let action: () -> Void
+
+    private var bg: Color {
+        switch variant {
+        case .ink:    return .ink
+        case .orange: return .quackOrange
+        case .ghost:  return .clear
+        }
+    }
+    private var fg: Color {
+        switch variant {
+        case .ink, .orange: return .white
+        case .ghost:        return .ink
+        }
+    }
+
+    var body: some View {
+        Button(action: disabled ? {} : action) {
+            Text(label)
+                .font(.bodyText(16, weight: .heavy))
+                .foregroundStyle(fg)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+                .background(bg)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(variant == .ghost ? Color.inkFaint : .clear, lineWidth: 2)
+                )
+                .cardShadow()
+                .opacity(disabled ? 0.4 : 1)
+        }
+        .buttonStyle(TapPress())
+        .disabled(disabled)
+    }
+}
+
+// MARK: - BackBtn
+struct BackBtn: View {
+    var dark: Bool = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 17, weight: .heavy))
+                .foregroundStyle(dark ? Color.ink : Color.white)
+                .frame(width: 44, height: 44)
+                .background(dark ? Color.white : Color.ink)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .cardShadow()
+        }
+        .buttonStyle(TapPress())
+    }
+}
+
+#Preview("Buttons") {
+    VStack(spacing: 12) {
+        CTAButton(label: "Let's go", variant: .ink) {}
+        CTAButton(label: "Start mission", variant: .orange) {}
+        CTAButton(label: "Skip", variant: .ghost) {}
+        CTAButton(label: "Disabled", disabled: true) {}
+        HStack {
+            BackBtn { }
+            BackBtn(dark: true) { }
+        }
+    }
+    .padding()
+    .background(Color.cream)
+}

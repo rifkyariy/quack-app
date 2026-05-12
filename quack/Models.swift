@@ -1,83 +1,127 @@
 import SwiftUI
+import Observation
 
-struct Question: Identifiable {
-    let id = UUID()
-    let character: String
+// MARK: - Vocab
+struct VocabItem: Identifiable {
+    let id: String
+    let hanzi: String
     let pinyin: String
-    let english: String
-    let options: [String]   // first item is always the correct answer
+    let en: String
+    let cat: String
+    let tone: Tone
+    let emoji: String
 }
 
-struct Mission: Identifiable {
-    let id: Int
-    let emoji: String
-    let title: String
-    let chineseTitle: String
-    let color: Color
-    let questions: [Question]
-    var isUnlocked: Bool
-    var progress: Double    // 0‥1
+struct Category: Identifiable {
+    let id: String
+    let label: String
+    let tone: Tone
+}
 
-    static let all: [Mission] = [
-        Mission(
-            id: 0, emoji: "🐾", title: "Animals", chineseTitle: "动物",
-            color: .quOrange,
-            questions: [
-                Question(character: "鸭", pinyin: "yā",   english: "duck",   options: ["duck",   "cat",    "dog",    "bird"]),
-                Question(character: "猫", pinyin: "māo",  english: "cat",    options: ["cat",    "dog",    "fish",   "bird"]),
-                Question(character: "狗", pinyin: "gǒu",  english: "dog",    options: ["dog",    "pig",    "cat",    "bear"]),
-                Question(character: "鱼", pinyin: "yú",   english: "fish",   options: ["fish",   "bird",   "frog",   "snake"]),
-                Question(character: "鸟", pinyin: "niǎo", english: "bird",   options: ["bird",   "duck",   "horse",  "rabbit"]),
-            ],
-            isUnlocked: true, progress: 0.4
-        ),
-        Mission(
-            id: 1, emoji: "🔢", title: "Numbers", chineseTitle: "数字",
-            color: .quBlue,
-            questions: [
-                Question(character: "一", pinyin: "yī",  english: "one",   options: ["one",   "two",   "three", "four"]),
-                Question(character: "二", pinyin: "èr",  english: "two",   options: ["two",   "one",   "five",  "six"]),
-                Question(character: "三", pinyin: "sān", english: "three", options: ["three", "four",  "one",   "two"]),
-                Question(character: "四", pinyin: "sì",  english: "four",  options: ["four",  "three", "seven", "eight"]),
-                Question(character: "五", pinyin: "wǔ",  english: "five",  options: ["five",  "six",   "nine",  "ten"]),
-            ],
-            isUnlocked: true, progress: 0.0
-        ),
-        Mission(
-            id: 2, emoji: "🎨", title: "Colors", chineseTitle: "颜色",
-            color: .quPurple,
-            questions: [
-                Question(character: "红", pinyin: "hóng",  english: "red",    options: ["red",    "blue",   "green",  "yellow"]),
-                Question(character: "蓝", pinyin: "lán",   english: "blue",   options: ["blue",   "red",    "purple", "black"]),
-                Question(character: "黄", pinyin: "huáng", english: "yellow", options: ["yellow", "orange", "white",  "pink"]),
-                Question(character: "绿", pinyin: "lǜ",    english: "green",  options: ["green",  "blue",   "black",  "brown"]),
-                Question(character: "白", pinyin: "bái",   english: "white",  options: ["white",  "grey",   "red",    "pink"]),
-            ],
-            isUnlocked: false, progress: 0.0
-        ),
-        Mission(
-            id: 3, emoji: "🍎", title: "Food", chineseTitle: "食物",
-            color: .quGreen,
-            questions: [
-                Question(character: "饭",   pinyin: "fàn",    english: "rice",   options: ["rice",   "noodle", "bread",  "soup"]),
-                Question(character: "水",   pinyin: "shuǐ",   english: "water",  options: ["water",  "milk",   "juice",  "tea"]),
-                Question(character: "果",   pinyin: "guǒ",    english: "fruit",  options: ["fruit",  "meat",   "fish",   "egg"]),
-                Question(character: "肉",   pinyin: "ròu",    english: "meat",   options: ["meat",   "fish",   "rice",   "bread"]),
-                Question(character: "奶",   pinyin: "nǎi",    english: "milk",   options: ["milk",   "water",  "tea",    "juice"]),
-            ],
-            isUnlocked: false, progress: 0.0
-        ),
-        Mission(
-            id: 4, emoji: "👨‍👩‍👧", title: "Family", chineseTitle: "家人",
-            color: .quYellow,
-            questions: [
-                Question(character: "妈",   pinyin: "mā",    english: "mom",     options: ["mom",     "dad",     "sister",  "brother"]),
-                Question(character: "爸",   pinyin: "bà",    english: "dad",     options: ["dad",     "mom",     "grandpa", "uncle"]),
-                Question(character: "哥",   pinyin: "gē",    english: "brother", options: ["brother", "sister",  "cousin",  "uncle"]),
-                Question(character: "姐",   pinyin: "jiě",   english: "sister",  options: ["sister",  "brother", "aunt",    "grandma"]),
-                Question(character: "奶奶", pinyin: "nǎinai", english: "grandma", options: ["grandma", "grandpa", "mom",     "aunt"]),
-            ],
-            isUnlocked: false, progress: 0.0
-        ),
-    ]
+let VOCAB: [VocabItem] = [
+    // Fruits
+    VocabItem(id: "apple",   hanzi: "苹果", pinyin: "píngguǒ",   en: "Apple",   cat: "fruits",    tone: .orange, emoji: "🍎"),
+    VocabItem(id: "orange",  hanzi: "橘子", pinyin: "júzi",      en: "Orange",  cat: "fruits",    tone: .orange, emoji: "🍊"),
+    VocabItem(id: "banana",  hanzi: "香蕉", pinyin: "xiāngjiāo", en: "Banana",  cat: "fruits",    tone: .yellow, emoji: "🍌"),
+    VocabItem(id: "grape",   hanzi: "葡萄", pinyin: "pútáo",     en: "Grapes",  cat: "fruits",    tone: .lilac,  emoji: "🍇"),
+    // Animals
+    VocabItem(id: "cat",     hanzi: "猫",  pinyin: "māo",       en: "Cat",     cat: "animals",   tone: .yellow, emoji: "🐱"),
+    VocabItem(id: "dog",     hanzi: "狗",  pinyin: "gǒu",       en: "Dog",     cat: "animals",   tone: .orange, emoji: "🐶"),
+    VocabItem(id: "bird",    hanzi: "鸟",  pinyin: "niǎo",      en: "Bird",    cat: "animals",   tone: .cobalt, emoji: "🐦"),
+    VocabItem(id: "fish",    hanzi: "鱼",  pinyin: "yú",        en: "Fish",    cat: "animals",   tone: .mint,   emoji: "🐟"),
+    // Household
+    VocabItem(id: "chair",   hanzi: "椅子", pinyin: "yǐzi",      en: "Chair",   cat: "household", tone: .cobalt, emoji: "🪑"),
+    VocabItem(id: "book",    hanzi: "书",  pinyin: "shū",       en: "Book",    cat: "household", tone: .rose,   emoji: "📖"),
+    VocabItem(id: "cup",     hanzi: "杯子", pinyin: "bēizi",     en: "Cup",     cat: "household", tone: .lilac,  emoji: "🥤"),
+    VocabItem(id: "lamp",    hanzi: "灯",  pinyin: "dēng",      en: "Lamp",    cat: "household", tone: .yellow, emoji: "💡"),
+    // Food
+    VocabItem(id: "rice",    hanzi: "米饭", pinyin: "mǐfàn",     en: "Rice",    cat: "food",      tone: .cream,  emoji: "🍚"),
+    VocabItem(id: "noodle",  hanzi: "面",  pinyin: "miàn",      en: "Noodles", cat: "food",      tone: .yellow, emoji: "🍜"),
+    VocabItem(id: "egg",     hanzi: "蛋",  pinyin: "dàn",       en: "Egg",     cat: "food",      tone: .cream,  emoji: "🥚"),
+    VocabItem(id: "tea",     hanzi: "茶",  pinyin: "chá",       en: "Tea",     cat: "food",      tone: .mint,   emoji: "🍵"),
+    // Family
+    VocabItem(id: "mom",     hanzi: "妈妈", pinyin: "māma",      en: "Mom",     cat: "family",    tone: .rose,   emoji: "👩"),
+    VocabItem(id: "dad",     hanzi: "爸爸", pinyin: "bàba",      en: "Dad",     cat: "family",    tone: .cobalt, emoji: "👨"),
+    VocabItem(id: "brother", hanzi: "哥哥", pinyin: "gēge",      en: "Brother", cat: "family",    tone: .orange, emoji: "🧒"),
+    VocabItem(id: "sister",  hanzi: "姐姐", pinyin: "jiějie",    en: "Sister",  cat: "family",    tone: .lilac,  emoji: "👧"),
+]
+
+let CATEGORIES: [Category] = [
+    Category(id: "fruits",    label: "Fruits",    tone: .orange),
+    Category(id: "animals",   label: "Animals",   tone: .yellow),
+    Category(id: "household", label: "Household", tone: .cobalt),
+    Category(id: "food",      label: "Food",      tone: .mint),
+    Category(id: "family",    label: "Family",    tone: .rose),
+]
+
+// MARK: - TodayMission
+struct TodayMission {
+    var id: String
+    var title: String
+    var target: String
+
+    static func defaultMission() -> TodayMission {
+        let calendar = Calendar.current
+        let day = calendar.component(.day, from: Date())
+        let month = calendar.component(.month, from: Date())
+        let idx = (day + month * 3) % VOCAB.count
+        let word = VOCAB[idx]
+        return TodayMission(
+            id: "today",
+            title: "Find the \(word.en.lowercased())",
+            target: word.id
+        )
+    }
+}
+
+// MARK: - AppState
+@Observable
+final class AppState {
+    var name: String {
+        didSet { UserDefaults.standard.set(name, forKey: "quack.name") }
+    }
+    var age: Int {
+        didSet { UserDefaults.standard.set(age, forKey: "quack.age") }
+    }
+    var streak: Int {
+        didSet { UserDefaults.standard.set(streak, forKey: "quack.streak") }
+    }
+    var dailyProgress: Int = 0
+    var dailyGoal: Int = 3
+    var learned: [String] {
+        didSet { saveLearned() }
+    }
+    var todayMission: TodayMission
+
+    init() {
+        let ud = UserDefaults.standard
+        name          = ud.string(forKey: "quack.name") ?? "Alex"
+        age           = ud.integer(forKey: "quack.age").nonZero ?? 8
+        streak        = ud.integer(forKey: "quack.streak")
+        learned       = (try? JSONDecoder().decode([String].self,
+                          from: ud.data(forKey: "quack.learned") ?? Data())) ?? []
+        todayMission  = TodayMission.defaultMission()
+        dailyProgress = min(learned.count, 99)
+    }
+
+    func addLearned(_ id: String) {
+        guard !learned.contains(id) else { return }
+        learned.append(id)
+        dailyProgress = min(dailyProgress + 1, 99)
+    }
+
+    func resetProgress() {
+        learned = []
+        dailyProgress = 0
+        streak = 0
+    }
+
+    private func saveLearned() {
+        let data = (try? JSONEncoder().encode(learned)) ?? Data()
+        UserDefaults.standard.set(data, forKey: "quack.learned")
+    }
+}
+
+private extension Int {
+    var nonZero: Int? { self == 0 ? nil : self }
 }

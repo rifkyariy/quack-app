@@ -351,3 +351,85 @@ struct AgeView: View {
     AgeView(initial: 8, onBack: {}, onNext: { _ in })
         .environment(AppState())
 }
+
+// MARK: - IntroView
+struct IntroView: View {
+    let name: String
+    let onBack: () -> Void
+    let onNext: () -> Void
+
+    private let tips: [(icon: QuackIconName, title: String, body: String, color: Color)] = [
+        (.camera, "Point at things",   "Show Q an apple. Q tells you what it is in Mandarin.", .quackOrange),
+        (.mic,    "Say it back",       "Repeat the word. Q listens and tells you if it sounds right.", .cobalt),
+        (.star,   "Collect stickers",  "Every word you learn becomes a sticker in your book.", .mintDeep),
+    ]
+
+    var body: some View {
+        ZStack {
+            Color.cream.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack {
+                    BackBtn(action: onBack)
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Eyebrow(text: "Step 3 of 3", flank: false, size: 11)
+                    Text("How it works, \(name)")
+                        .font(.display(30, weight: .heavy))
+                        .foregroundStyle(Color.ink)
+                    Text("Three things to know before your first mission")
+                        .font(.bodyText(14))
+                        .foregroundStyle(Color.inkMuted)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+
+                VStack(spacing: 12) {
+                    ForEach(tips.indices, id: \.self) { i in
+                        let tip = tips[i]
+                        HStack(spacing: 14) {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(tip.color)
+                                .frame(width: 56, height: 56)
+                                .overlay(
+                                    QuackIcon(name: tip.icon, size: 28, color: .white, strokeWidth: 2.2)
+                                )
+                                .cardShadow()
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(tip.title)
+                                    .font(.display(18, weight: .heavy))
+                                    .foregroundStyle(Color.ink)
+                                Text(tip.body)
+                                    .font(.bodyText(13))
+                                    .foregroundStyle(Color.inkMuted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .quackCard()
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+
+                Spacer()
+
+                CTAButton(label: "Start my first mission", variant: .orange, action: onNext)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 32)
+            }
+        }
+    }
+}
+
+#Preview("Intro") {
+    IntroView(name: "Nia", onBack: {}, onNext: {})
+        .environment(AppState())
+}

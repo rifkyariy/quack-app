@@ -666,7 +666,7 @@ struct Confetti: View {
 #Preview("StickerTile") {
     let apple = VOCAB[0]
     let fish  = VOCAB[7]
-    return VStack {
+    VStack {
         HStack {
             StickerTile(item: apple, size: .sm)
             StickerTile(item: fish, size: .sm)

@@ -1,17 +1,13 @@
-//
-//  quackApp.swift
-//  quack
-//
-//  Created by mit on 2026/5/8.
-//
-
 import SwiftUI
 
 @main
 struct quackApp: App {
+    @State private var appState = AppState()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppView()
+                .environment(appState)
         }
     }
 }

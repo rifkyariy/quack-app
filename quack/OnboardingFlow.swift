@@ -218,8 +218,7 @@ struct AgeView: View {
     private let itemWidth: CGFloat = 110
 
     @State private var selectedIndex: Int
-    @GestureState private var dragOffset: CGFloat = 0
-    @State private var dragging = false
+    @GestureState private var gesture: (offset: CGFloat, dragging: Bool) = (0, false)
 
     init(initial: Int, onBack: @escaping () -> Void, onNext: @escaping (Int) -> Void) {
         self.initial = initial
@@ -269,10 +268,10 @@ struct AgeView: View {
                                 .frame(width: 110, height: 110)
 
                             GeometryReader { geo in
-                                let offset = -CGFloat(selectedIndex) * itemWidth + dragOffset
+                                let offset = -CGFloat(selectedIndex) * itemWidth + gesture.offset
                                 HStack(spacing: 0) {
                                     ForEach(ages.indices, id: \.self) { i in
-                                        let dist = abs(CGFloat(i - selectedIndex) - dragOffset / itemWidth)
+                                        let dist = abs(CGFloat(i - selectedIndex) - gesture.offset / itemWidth)
                                         let scale = max(0.5, 1 - dist * 0.18)
                                         let opacity = max(0.35, 1 - dist * 0.25)
                                         ZStack {
@@ -290,18 +289,16 @@ struct AgeView: View {
                                     }
                                 }
                                 .offset(x: geo.size.width / 2 - itemWidth / 2 + offset)
-                                .animation(dragging ? nil : .spring(response: 0.32, dampingFraction: 0.7), value: offset)
+                                .animation(gesture.dragging ? nil : .spring(response: 0.32, dampingFraction: 0.7), value: offset)
                                 .contentShape(Rectangle())
                                 .gesture(
                                     DragGesture()
-                                        .updating($dragOffset) { val, state, _ in
-                                            state = val.translation.width
-                                            dragging = true
+                                        .updating($gesture) { val, state, _ in
+                                            state = (val.translation.width, true)
                                         }
                                         .onEnded { val in
                                             let steps = Int((-val.translation.width / itemWidth).rounded())
                                             selectedIndex = max(0, min(ages.count - 1, selectedIndex + steps))
-                                            dragging = false
                                         }
                                 )
                             }

@@ -1,0 +1,180 @@
+/* ─────────────────────────────────────────────────────────────
+   Quack Design System — Colors & Type
+   Mandarin learning app for diaspora kids. Playful, bold, warm.
+   ───────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Nunito:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  /* ── Brand core ────────────────────────────────────────────── */
+  --quack-orange:       #F86A38;   /* primary — the wordmark, CTAs */
+  --quack-orange-deep:  #E54E1B;   /* pressed / hover-darker */
+  --quack-orange-soft:  #FFB7A0;   /* coral wash — input fill on orange BG */
+  --quack-yellow:       #FCC83C;   /* duck body / highlight */
+  --quack-yellow-soft:  #FFE89A;   /* sunshine wash */
+
+  /* ── Surface / background ──────────────────────────────────── */
+  --cream:              #FFF1E1;   /* default app background */
+  --cream-deep:         #FBE6CB;   /* pressed cream / banded sections */
+  --paper:              #FFFFFF;   /* card surfaces over cream */
+
+  /* ── Ink (text + dark surfaces) ────────────────────────────── */
+  --ink:                #14213D;   /* primary text + dark buttons */
+  --ink-soft:           #2A3556;   /* hover state for dark surfaces */
+  --ink-60:             #5B6486;   /* secondary text */
+  --ink-40:             #9098AE;   /* tertiary / placeholder */
+  --ink-20:             #D7DAE3;   /* hairlines */
+
+  /* ── Accents (illustration palette) ────────────────────────── */
+  --mint:               #93D5B8;   /* sage / success */
+  --mint-deep:          #5FB594;
+  --cobalt:             #4F5DDB;   /* secondary action / focus ring */
+  --cobalt-deep:        #2F3CB8;
+  --lilac:              #C9C5F2;   /* tertiary surface */
+  --rose:               #FF8FA3;   /* destructive / streak fire */
+
+  /* ── Semantic ──────────────────────────────────────────────── */
+  --success:            var(--mint-deep);
+  --warning:            var(--quack-yellow);
+  --danger:             var(--quack-orange-deep);
+  --info:               var(--cobalt);
+
+  /* ── Foreground tokens ─────────────────────────────────────── */
+  --fg:                 var(--ink);
+  --fg-muted:           var(--ink-60);
+  --fg-faint:           var(--ink-40);
+  --fg-on-orange:       #FFFFFF;
+  --fg-on-ink:          #FFFFFF;
+  --fg-on-cream:        var(--ink);
+
+  /* ── Type families ─────────────────────────────────────────── */
+  --font-display: 'Baloo 2', system-ui, sans-serif;          /* chunky rounded — headings, wordmark-ish */
+  --font-body:    'Nunito', system-ui, sans-serif;           /* friendly rounded sans — UI + body */
+  --font-mono:    ui-monospace, 'SF Mono', Menlo, monospace; /* numerals / debug only */
+
+  /* ── Type scale (mobile-first, but works on web too) ───────── */
+  --text-xs:    12px;   --lh-xs:   16px;
+  --text-sm:    14px;   --lh-sm:   20px;
+  --text-base:  16px;   --lh-base: 24px;
+  --text-md:    18px;   --lh-md:   26px;
+  --text-lg:    22px;   --lh-lg:   30px;
+  --text-xl:    28px;   --lh-xl:   34px;
+  --text-2xl:   34px;   --lh-2xl:  40px;
+  --text-3xl:   44px;   --lh-3xl:  50px;
+  --text-4xl:   56px;   --lh-4xl:  62px;
+
+  /* ── Spacing (4px base) ────────────────────────────────────── */
+  --s-1: 4px;   --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
+  --s-5: 20px;  --s-6: 24px;  --s-7: 32px;  --s-8: 40px;
+  --s-9: 48px;  --s-10: 64px; --s-11: 80px; --s-12: 96px;
+
+  /* ── Radii (chunky, kid-friendly) ──────────────────────────── */
+  --r-xs:  6px;
+  --r-sm:  10px;
+  --r-md:  16px;
+  --r-lg:  22px;     /* default card radius */
+  --r-xl:  28px;     /* big hero cards */
+  --r-2xl: 36px;     /* phone bezel-ish */
+  --r-pill: 999px;
+
+  /* ── Shadows (soft, never harsh) ───────────────────────────── */
+  --shadow-card:  0 1px 0 0 rgba(20,33,61,0.06), 0 4px 12px -6px rgba(20,33,61,0.14);
+  --shadow-pop:   0 2px 0 0 rgba(20,33,61,0.08), 0 10px 20px -10px rgba(20,33,61,0.16);
+  --shadow-press: 0 1px 0 0 rgba(20,33,61,0.12);
+  --shadow-ring:  0 0 0 4px rgba(248,106,56,0.22);
+
+  /* "Stacked" button shadow — the slight 3D offset on dark/orange CTAs */
+  --press-y-rest: 0px;
+  --press-y-down: 2px;
+
+  /* ── Motion ────────────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(.2,.8,.2,1);
+  --ease-bounce: cubic-bezier(.34,1.56,.64,1);
+  --dur-fast:    140ms;
+  --dur-base:    220ms;
+  --dur-slow:    420ms;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Semantic / element defaults
+   ────────────────────────────────────────────────────────────── */
+html, body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--lh-base);
+  color: var(--fg);
+  background: var(--cream);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, .h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--text-3xl);
+  line-height: var(--lh-3xl);
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  margin: 0;
+}
+h2, .h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--text-2xl);
+  line-height: var(--lh-2xl);
+  letter-spacing: -0.005em;
+  margin: 0;
+}
+h3, .h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-xl);
+  line-height: var(--lh-xl);
+  margin: 0;
+}
+h4, .h4 {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: var(--text-lg);
+  line-height: var(--lh-lg);
+  margin: 0;
+}
+
+p, .body {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: var(--text-base);
+  line-height: var(--lh-base);
+  color: var(--fg);
+  margin: 0;
+}
+
+.body-sm {
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  font-weight: 500;
+  color: var(--fg-muted);
+}
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--quack-orange);
+}
+
+.label {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  color: var(--fg);
+}
+
+code, kbd, .mono {
+  font-family: var(--font-mono);
+  font-size: 0.95em;
+}

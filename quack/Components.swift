@@ -184,3 +184,82 @@ struct BackBtn: View {
     .padding()
     .background(Color.cream)
 }
+
+// MARK: - ProgressBar
+struct ProgressBar: View {
+    var value: Double
+    var max: Double
+    var color: Color = .quackOrange
+    var trackColor: Color = .inkFaint
+    var height: CGFloat = 12
+
+    private var pct: Double { Swift.max(0, Swift.min(1, value / max)) }
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(trackColor).frame(height: height)
+                Capsule()
+                    .fill(color)
+                    .frame(width: geo.size.width * pct, height: height)
+                    .animation(.easeOut(duration: 0.4), value: pct)
+            }
+        }
+        .frame(height: height)
+    }
+}
+
+// MARK: - DailyRing
+struct DailyRing: View {
+    var value: Int
+    var max: Int
+
+    private var pct: Double { Double(value) / Double(Swift.max(1, max)) }
+    private let r: CGFloat = 24
+    private let strokeWidth: CGFloat = 6
+
+    var body: some View {
+        ZStack {
+            Canvas { ctx, size in
+                let center = CGPoint(x: size.width / 2, y: size.height / 2)
+                let startAngle = Angle.degrees(-90)
+
+                var trackPath = Path()
+                trackPath.addArc(center: center, radius: r,
+                                 startAngle: .degrees(0), endAngle: .degrees(360),
+                                 clockwise: false)
+                ctx.stroke(trackPath,
+                           with: .color(.inkFaint),
+                           style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
+
+                let endDegrees = -90 + 360 * pct
+                var progressPath = Path()
+                progressPath.addArc(center: center, radius: r,
+                                    startAngle: startAngle,
+                                    endAngle: .degrees(endDegrees),
+                                    clockwise: false)
+                ctx.stroke(progressPath,
+                           with: .color(.quackOrange),
+                           style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
+            }
+            .frame(width: 64, height: 64)
+            .animation(.easeOut(duration: 0.4), value: pct)
+
+            Text("\(value)")
+                .font(.display(20, weight: .heavy))
+                .foregroundStyle(Color.ink)
+        }
+        .frame(width: 64, height: 64)
+    }
+}
+
+#Preview("Progress") {
+    VStack(spacing: 24) {
+        ProgressBar(value: 0.6, max: 1.0, height: 12)
+        ProgressBar(value: 2, max: 5, color: .cobalt, height: 8)
+        DailyRing(value: 2, max: 3)
+        DailyRing(value: 3, max: 3)
+    }
+    .padding()
+    .background(Color.cream)
+}

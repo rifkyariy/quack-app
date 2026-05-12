@@ -207,3 +207,147 @@ struct NameView: View {
     NameView(initial: "Alex", onBack: {}, onNext: { _ in })
         .environment(AppState())
 }
+
+// MARK: - AgeView
+struct AgeView: View {
+    let initial: Int
+    let onBack: () -> Void
+    let onNext: (Int) -> Void
+
+    private let ages = [4, 5, 6, 7, 8, 9, 10, 11, 12]
+    private let itemWidth: CGFloat = 110
+
+    @State private var selectedIndex: Int
+    @GestureState private var dragOffset: CGFloat = 0
+    @State private var dragging = false
+
+    init(initial: Int, onBack: @escaping () -> Void, onNext: @escaping (Int) -> Void) {
+        self.initial = initial
+        self.onBack = onBack
+        self.onNext = onNext
+        _selectedIndex = State(initialValue: max(0, [4,5,6,7,8,9,10,11,12].firstIndex(of: initial) ?? 4))
+    }
+
+    var body: some View {
+        ZStack {
+            Color.cream.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack {
+                    BackBtn(action: onBack)
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Eyebrow(text: "Step 2 of 3", flank: false, size: 11)
+                    Text("How old are you?")
+                        .font(.display(28, weight: .heavy))
+                        .foregroundStyle(Color.ink)
+                    Text("Drag to spin · Q sets the level")
+                        .font(.bodyText(13))
+                        .foregroundStyle(Color.inkMuted)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.top, 14)
+
+                ZStack(alignment: .bottom) {
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(Color.quackOrange)
+                        .grain()
+                        .popShadow()
+
+                    Sparkles(count: 4, opacity: 0.5)
+
+                    VStack(spacing: 0) {
+                        ZStack {
+                            Circle()
+                                .stroke(Color.white.opacity(0.45), lineWidth: 3)
+                                .fill(Color.white.opacity(0.18))
+                                .frame(width: 110, height: 110)
+
+                            GeometryReader { geo in
+                                let offset = -CGFloat(selectedIndex) * itemWidth + dragOffset
+                                HStack(spacing: 0) {
+                                    ForEach(ages.indices, id: \.self) { i in
+                                        let dist = abs(CGFloat(i - selectedIndex) - dragOffset / itemWidth)
+                                        let scale = max(0.5, 1 - dist * 0.18)
+                                        let opacity = max(0.35, 1 - dist * 0.25)
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.white.opacity(i == selectedIndex ? 1.0 : 0.92))
+                                                .frame(width: 100, height: 100)
+                                                .popShadow()
+                                            Text("\(ages[i])")
+                                                .font(.display(42, weight: .heavy))
+                                                .foregroundStyle(Color.ink)
+                                        }
+                                        .frame(width: itemWidth)
+                                        .scaleEffect(scale)
+                                        .opacity(opacity)
+                                    }
+                                }
+                                .offset(x: geo.size.width / 2 - itemWidth / 2 + offset)
+                                .animation(dragging ? nil : .spring(response: 0.32, dampingFraction: 0.7), value: offset)
+                                .contentShape(Rectangle())
+                                .gesture(
+                                    DragGesture()
+                                        .updating($dragOffset) { val, state, _ in
+                                            state = val.translation.width
+                                            dragging = true
+                                        }
+                                        .onEnded { val in
+                                            let steps = Int((-val.translation.width / itemWidth).rounded())
+                                            selectedIndex = max(0, min(ages.count - 1, selectedIndex + steps))
+                                            dragging = false
+                                        }
+                                )
+                            }
+                            .frame(height: 180)
+                            .clipped()
+                            .overlay(
+                                LinearGradient(
+                                    colors: [Color.quackOrange, .clear, .clear, Color.quackOrange],
+                                    startPoint: .leading, endPoint: .trailing
+                                )
+                                .allowsHitTesting(false)
+                            )
+                        }
+                        .frame(height: 180)
+                        .padding(.top, 14)
+
+                        VStack(spacing: 2) {
+                            Text("I AM")
+                                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                                .tracking(12 * 0.14)
+                                .foregroundStyle(.white.opacity(0.85))
+                            Text("\(ages[selectedIndex]) years old")
+                                .font(.display(22, weight: .heavy))
+                                .foregroundStyle(.white)
+                        }
+                        .padding(.top, 4)
+
+                        Spacer()
+                        Mascot(state: .idle, size: 120)
+                    }
+                }
+                .frame(maxWidth: .infinity, minHeight: 360)
+                .padding(.horizontal, 24)
+                .padding(.top, 14)
+
+                Spacer()
+
+                CTAButton(label: "Continue", variant: .ink, action: { onNext(ages[selectedIndex]) })
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 28)
+            }
+        }
+    }
+}
+
+#Preview("Age") {
+    AgeView(initial: 8, onBack: {}, onNext: { _ in })
+        .environment(AppState())
+}

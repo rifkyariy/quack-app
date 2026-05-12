@@ -532,3 +532,156 @@ private struct TabBarPreviewWrapper: View {
         TabBarPreviewWrapper()
     }
 }
+
+// MARK: - StickerTile
+enum StickerSize { case sm, md, lg }
+
+struct StickerTile: View {
+    let item: VocabItem
+    var locked: Bool = false
+    var size: StickerSize = .md
+    var justEarned: Bool = false
+    var onTap: (() -> Void)? = nil
+
+    private var dim: CGFloat {
+        switch size { case .sm: 78; case .md: 110; case .lg: 140 }
+    }
+    private var hanziSize: CGFloat {
+        switch size { case .sm: 28; case .md: 38; case .lg: 48 }
+    }
+
+    @State private var appeared = false
+
+    var body: some View {
+        Button {
+            onTap?()
+        } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(locked ? Color.inkFaint : item.tone.bg)
+
+                if !locked {
+                    GrainOverlay()
+                    Text(item.emoji)
+                        .font(.system(size: 18))
+                        .opacity(0.35)
+                        .rotationEffect(.degrees(14))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                        .padding(10)
+                    Text("✦")
+                        .font(.system(size: 14, weight: .black))
+                        .opacity(0.35)
+                        .rotationEffect(.degrees(-10))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                        .padding(8)
+                }
+
+                VStack(spacing: 4) {
+                    if locked {
+                        QuackIcon(name: .lock, size: 28, color: .inkMuted, strokeWidth: 1.8)
+                    } else {
+                        Text(item.hanzi)
+                            .font(.display(hanziSize, weight: .heavy))
+                            .foregroundStyle(item.tone.fg)
+                        Text(item.pinyin)
+                            .font(.bodyText(10, weight: .bold))
+                            .foregroundStyle(item.tone.fg.opacity(0.9))
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .aspectRatio(1, contentMode: .fit)
+            .cardShadow()
+            .scaleEffect(appeared ? 1 : 0.05)
+            .opacity(appeared ? 1 : 0)
+        }
+        .buttonStyle(TapPress())
+        .disabled(onTap == nil || locked)
+        .onAppear {
+            if justEarned {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.45).delay(0.2)) {
+                    appeared = true
+                }
+            } else {
+                appeared = true
+            }
+        }
+    }
+}
+
+// MARK: - Confetti
+private struct ConfettiPiece {
+    let x: Double
+    let delay: Double
+    let duration: Double
+    let rotation: Double
+    let colorIndex: Int
+    let shape: Int
+}
+
+private let confettiColors: [Color] = [.quackOrange, .quackYellow, .mint, .cobalt, .rose]
+
+struct Confetti: View {
+    var count: Int = 30
+
+    private let pieces: [ConfettiPiece] = (0..<30).map { i in
+        ConfettiPiece(
+            x: Double(i * 3337 % 100) / 100,
+            delay: Double(i * 1234 % 800) / 1000,
+            duration: 1.6 + Double(i * 567 % 1600) / 1000,
+            rotation: Double(i * 137 % 360),
+            colorIndex: i % 5,
+            shape: i % 3
+        )
+    }
+
+    var body: some View {
+        TimelineView(.animation) { tl in
+            Canvas { ctx, size in
+                let now = tl.date.timeIntervalSinceReferenceDate
+                for piece in pieces.prefix(count) {
+                    let elapsed = (now - piece.delay).truncatingRemainder(dividingBy: piece.duration + 0.5)
+                    guard elapsed > 0 else { continue }
+                    let progress = elapsed / (piece.duration + 0.5)
+                    let y = -20 + progress * (size.height + 40)
+                    let x = piece.x * size.width
+                    let rot = Angle.degrees(piece.rotation + progress * 720)
+
+                    ctx.translateBy(x: x, y: y)
+                    ctx.rotate(by: rot)
+                    let w: CGFloat = piece.shape == 0 ? 10 : 14
+                    let h: CGFloat = piece.shape == 1 ? 16 : 10
+                    let rect = CGRect(x: -w/2, y: -h/2, width: w, height: h)
+                    let path = piece.shape == 2 ? Path(ellipseIn: rect) : Path(roundedRect: rect, cornerRadius: 2)
+                    ctx.fill(path, with: .color(confettiColors[piece.colorIndex].opacity(1 - progress * 0.5)))
+                    ctx.translateBy(x: -x, y: -y)
+                    ctx.rotate(by: .degrees(-rot.degrees))
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+#Preview("StickerTile") {
+    let apple = VOCAB[0]
+    let fish  = VOCAB[7]
+    return VStack {
+        HStack {
+            StickerTile(item: apple, size: .sm)
+            StickerTile(item: fish, size: .sm)
+            StickerTile(item: apple, locked: true, size: .sm)
+        }
+        StickerTile(item: apple, size: .md)
+        StickerTile(item: fish, justEarned: true, size: .lg)
+    }
+    .padding()
+    .background(Color.cream)
+}
+
+#Preview("Confetti") {
+    ZStack {
+        Color.mint.ignoresSafeArea()
+        Confetti(count: 30)
+    }
+}

@@ -673,7 +673,7 @@ struct Confetti: View {
             StickerTile(item: apple, locked: true, size: .sm)
         }
         StickerTile(item: apple, size: .md)
-        StickerTile(item: fish, justEarned: true, size: .lg)
+        StickerTile(item: fish, size: .lg, justEarned: true)
     }
     .padding()
     .background(Color.cream)

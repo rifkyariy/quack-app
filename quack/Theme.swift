@@ -58,7 +58,7 @@ extension Font {
     static func display(_ size: CGFloat, weight: Font.Weight = .heavy) -> Font {
         .system(size: size, weight: weight, design: .rounded)
     }
-    static func body(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
+    static func bodyText(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
         .system(size: size, weight: weight)
     }
     static var eyebrow: Font { .system(size: 11, weight: .heavy, design: .rounded) }

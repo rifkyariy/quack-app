@@ -263,3 +263,272 @@ struct DailyRing: View {
     .padding()
     .background(Color.cream)
 }
+
+// MARK: - QuackIcon
+enum QuackIconName {
+    case home, mission, book, parent
+    case back, close, mic, camera, speaker, star, fire
+    case check, plus, chevron, lock, shield, photo, clock, heart, sound, play
+}
+
+struct QuackIcon: View {
+    let name: QuackIconName
+    var size: CGFloat = 24
+    var color: Color = .primary
+    var strokeWidth: CGFloat = 1.8
+
+    var body: some View {
+        Canvas { ctx, sz in
+            let filled: [QuackIconName] = [.star, .fire, .heart, .speaker, .play]
+            if filled.contains(name) {
+                ctx.fill(iconPath(for: name, in: sz), with: .color(color))
+            } else {
+                ctx.stroke(iconPath(for: name, in: sz), with: .color(color),
+                           style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round, lineJoin: .round))
+            }
+        }
+        .frame(width: size, height: size)
+    }
+
+    private func iconPath(for icon: QuackIconName, in sz: CGSize) -> Path {
+        let s = sz.width / 24
+        var p = Path()
+        switch icon {
+        case .home:
+            p.move(to: CGPoint(x: 3*s, y: 11*s))
+            p.addLine(to: CGPoint(x: 12*s, y: 3*s))
+            p.addLine(to: CGPoint(x: 21*s, y: 11*s))
+            p.move(to: CGPoint(x: 5*s, y: 10*s))
+            p.addLine(to: CGPoint(x: 5*s, y: 20*s))
+            p.addLine(to: CGPoint(x: 19*s, y: 20*s))
+            p.addLine(to: CGPoint(x: 19*s, y: 10*s))
+        case .mission:
+            p.addEllipse(in: CGRect(x: 3*s, y: 3*s, width: 18*s, height: 18*s))
+            p.addEllipse(in: CGRect(x: 8*s, y: 8*s, width: 8*s, height: 8*s))
+        case .book:
+            p.move(to: CGPoint(x: 4*s, y: 4*s))
+            p.addLine(to: CGPoint(x: 11*s, y: 4*s))
+            p.addCurve(to: CGPoint(x: 14*s, y: 7*s),
+                       control1: CGPoint(x: 14*s, y: 4*s), control2: CGPoint(x: 14*s, y: 5.5*s))
+            p.addLine(to: CGPoint(x: 14*s, y: 17*s))
+            p.addCurve(to: CGPoint(x: 12*s, y: 15*s),
+                       control1: CGPoint(x: 14*s, y: 17*s), control2: CGPoint(x: 13*s, y: 15*s))
+            p.addLine(to: CGPoint(x: 4*s, y: 15*s))
+            p.closeSubpath()
+            p.move(to: CGPoint(x: 20*s, y: 4*s))
+            p.addLine(to: CGPoint(x: 13*s, y: 4*s))
+            p.addCurve(to: CGPoint(x: 10*s, y: 7*s),
+                       control1: CGPoint(x: 10*s, y: 4*s), control2: CGPoint(x: 10*s, y: 5.5*s))
+            p.addLine(to: CGPoint(x: 10*s, y: 17*s))
+            p.addCurve(to: CGPoint(x: 12*s, y: 15*s),
+                       control1: CGPoint(x: 10*s, y: 17*s), control2: CGPoint(x: 11*s, y: 15*s))
+            p.addLine(to: CGPoint(x: 20*s, y: 15*s))
+            p.closeSubpath()
+        case .parent:
+            p.addEllipse(in: CGRect(x: 8*s, y: 4*s, width: 8*s, height: 8*s))
+            p.move(to: CGPoint(x: 4*s, y: 21*s))
+            p.addCurve(to: CGPoint(x: 20*s, y: 21*s),
+                       control1: CGPoint(x: 5*s, y: 17*s), control2: CGPoint(x: 19*s, y: 17*s))
+        case .back:
+            p.move(to: CGPoint(x: 15*s, y: 6*s))
+            p.addLine(to: CGPoint(x: 9*s, y: 12*s))
+            p.addLine(to: CGPoint(x: 15*s, y: 18*s))
+        case .close:
+            p.move(to: CGPoint(x: 6*s, y: 6*s))
+            p.addLine(to: CGPoint(x: 18*s, y: 18*s))
+            p.move(to: CGPoint(x: 6*s, y: 18*s))
+            p.addLine(to: CGPoint(x: 18*s, y: 6*s))
+        case .mic:
+            p.addRoundedRect(in: CGRect(x: 9*s, y: 3*s, width: 6*s, height: 12*s),
+                             cornerSize: CGSize(width: 3*s, height: 3*s))
+            p.move(to: CGPoint(x: 5*s, y: 11*s))
+            p.addCurve(to: CGPoint(x: 19*s, y: 11*s),
+                       control1: CGPoint(x: 5*s, y: 18*s), control2: CGPoint(x: 19*s, y: 18*s))
+            p.move(to: CGPoint(x: 12*s, y: 18*s))
+            p.addLine(to: CGPoint(x: 12*s, y: 21*s))
+        case .camera:
+            p.move(to: CGPoint(x: 4*s, y: 7*s))
+            p.addLine(to: CGPoint(x: 7*s, y: 7*s))
+            p.addLine(to: CGPoint(x: 9*s, y: 4*s))
+            p.addLine(to: CGPoint(x: 15*s, y: 4*s))
+            p.addLine(to: CGPoint(x: 17*s, y: 7*s))
+            p.addLine(to: CGPoint(x: 20*s, y: 7*s))
+            p.addLine(to: CGPoint(x: 20*s, y: 19*s))
+            p.addLine(to: CGPoint(x: 4*s, y: 19*s))
+            p.closeSubpath()
+            p.addEllipse(in: CGRect(x: 8*s, y: 9*s, width: 8*s, height: 8*s))
+        case .speaker:
+            p.move(to: CGPoint(x: 4*s, y: 9*s))
+            p.addLine(to: CGPoint(x: 8*s, y: 9*s))
+            p.addLine(to: CGPoint(x: 13*s, y: 5*s))
+            p.addLine(to: CGPoint(x: 13*s, y: 19*s))
+            p.addLine(to: CGPoint(x: 8*s, y: 15*s))
+            p.addLine(to: CGPoint(x: 4*s, y: 15*s))
+            p.closeSubpath()
+            p.move(to: CGPoint(x: 16*s, y: 8*s))
+            p.addCurve(to: CGPoint(x: 16*s, y: 16*s),
+                       control1: CGPoint(x: 19*s, y: 9.5*s), control2: CGPoint(x: 19*s, y: 14.5*s))
+        case .star:
+            p.move(to: CGPoint(x: 12*s, y: 3*s))
+            p.addLine(to: CGPoint(x: 14.6*s, y: 8.5*s))
+            p.addLine(to: CGPoint(x: 20.7*s, y: 9.2*s))
+            p.addLine(to: CGPoint(x: 16.2*s, y: 13.2*s))
+            p.addLine(to: CGPoint(x: 17.4*s, y: 19.2*s))
+            p.addLine(to: CGPoint(x: 12*s, y: 16.1*s))
+            p.addLine(to: CGPoint(x: 6.6*s, y: 19.2*s))
+            p.addLine(to: CGPoint(x: 7.8*s, y: 13.2*s))
+            p.addLine(to: CGPoint(x: 3.3*s, y: 9.2*s))
+            p.addLine(to: CGPoint(x: 9.4*s, y: 8.5*s))
+            p.closeSubpath()
+        case .fire:
+            p.move(to: CGPoint(x: 12*s, y: 3*s))
+            p.addCurve(to: CGPoint(x: 17*s, y: 13*s),
+                       control1: CGPoint(x: 13*s, y: 7*s), control2: CGPoint(x: 17*s, y: 8*s))
+            p.addCurve(to: CGPoint(x: 12*s, y: 21*s),
+                       control1: CGPoint(x: 21*s, y: 18*s), control2: CGPoint(x: 17*s, y: 21*s))
+            p.addCurve(to: CGPoint(x: 7*s, y: 13*s),
+                       control1: CGPoint(x: 7*s, y: 21*s), control2: CGPoint(x: 3*s, y: 18*s))
+            p.addCurve(to: CGPoint(x: 12*s, y: 3*s),
+                       control1: CGPoint(x: 7*s, y: 8*s), control2: CGPoint(x: 11*s, y: 7*s))
+        case .check:
+            p.move(to: CGPoint(x: 5*s, y: 12*s))
+            p.addLine(to: CGPoint(x: 9*s, y: 16*s))
+            p.addLine(to: CGPoint(x: 19*s, y: 6*s))
+        case .chevron:
+            p.move(to: CGPoint(x: 9*s, y: 6*s))
+            p.addLine(to: CGPoint(x: 15*s, y: 12*s))
+            p.addLine(to: CGPoint(x: 9*s, y: 18*s))
+        case .lock:
+            p.addRoundedRect(in: CGRect(x: 5*s, y: 11*s, width: 14*s, height: 9*s),
+                             cornerSize: CGSize(width: 2*s, height: 2*s))
+            p.move(to: CGPoint(x: 8*s, y: 11*s))
+            p.addLine(to: CGPoint(x: 8*s, y: 8*s))
+            p.addCurve(to: CGPoint(x: 16*s, y: 8*s),
+                       control1: CGPoint(x: 8*s, y: 4*s), control2: CGPoint(x: 16*s, y: 4*s))
+            p.addLine(to: CGPoint(x: 16*s, y: 11*s))
+        case .shield:
+            p.move(to: CGPoint(x: 12*s, y: 3*s))
+            p.addLine(to: CGPoint(x: 20*s, y: 6*s))
+            p.addLine(to: CGPoint(x: 20*s, y: 12*s))
+            p.addCurve(to: CGPoint(x: 12*s, y: 21*s),
+                       control1: CGPoint(x: 20*s, y: 17*s), control2: CGPoint(x: 16*s, y: 20*s))
+            p.addCurve(to: CGPoint(x: 4*s, y: 12*s),
+                       control1: CGPoint(x: 8*s, y: 20*s), control2: CGPoint(x: 4*s, y: 17*s))
+            p.addLine(to: CGPoint(x: 4*s, y: 6*s))
+            p.closeSubpath()
+        case .photo:
+            p.addRoundedRect(in: CGRect(x: 3*s, y: 5*s, width: 18*s, height: 14*s),
+                             cornerSize: CGSize(width: 2*s, height: 2*s))
+            p.addEllipse(in: CGRect(x: 7*s, y: 9*s, width: 4*s, height: 4*s))
+            p.move(to: CGPoint(x: 3*s, y: 17*s))
+            p.addLine(to: CGPoint(x: 9*s, y: 12*s))
+            p.addLine(to: CGPoint(x: 14*s, y: 16*s))
+            p.addLine(to: CGPoint(x: 17*s, y: 14*s))
+            p.addLine(to: CGPoint(x: 21*s, y: 17*s))
+        case .clock:
+            p.addEllipse(in: CGRect(x: 3*s, y: 3*s, width: 18*s, height: 18*s))
+            p.move(to: CGPoint(x: 12*s, y: 7*s))
+            p.addLine(to: CGPoint(x: 12*s, y: 12*s))
+            p.addLine(to: CGPoint(x: 15*s, y: 14*s))
+        case .heart:
+            p.move(to: CGPoint(x: 12*s, y: 20*s))
+            p.addCurve(to: CGPoint(x: 5*s, y: 10*s),
+                       control1: CGPoint(x: 12*s, y: 20*s), control2: CGPoint(x: 5*s, y: 16*s))
+            p.addCurve(to: CGPoint(x: 12*s, y: 6*s),
+                       control1: CGPoint(x: 5*s, y: 6*s), control2: CGPoint(x: 8*s, y: 6*s))
+            p.addCurve(to: CGPoint(x: 19*s, y: 10*s),
+                       control1: CGPoint(x: 16*s, y: 6*s), control2: CGPoint(x: 19*s, y: 6*s))
+            p.addCurve(to: CGPoint(x: 12*s, y: 20*s),
+                       control1: CGPoint(x: 19*s, y: 16*s), control2: CGPoint(x: 12*s, y: 20*s))
+        case .sound:
+            p.move(to: CGPoint(x: 4*s, y: 9*s))
+            p.addLine(to: CGPoint(x: 8*s, y: 9*s))
+            p.addLine(to: CGPoint(x: 13*s, y: 5*s))
+            p.addLine(to: CGPoint(x: 13*s, y: 19*s))
+            p.addLine(to: CGPoint(x: 8*s, y: 15*s))
+            p.addLine(to: CGPoint(x: 4*s, y: 15*s))
+            p.closeSubpath()
+        case .plus:
+            p.move(to: CGPoint(x: 12*s, y: 5*s))
+            p.addLine(to: CGPoint(x: 12*s, y: 19*s))
+            p.move(to: CGPoint(x: 5*s, y: 12*s))
+            p.addLine(to: CGPoint(x: 19*s, y: 12*s))
+        case .play:
+            p.move(to: CGPoint(x: 7*s, y: 5*s))
+            p.addLine(to: CGPoint(x: 18*s, y: 12*s))
+            p.addLine(to: CGPoint(x: 7*s, y: 19*s))
+            p.closeSubpath()
+        }
+        return p
+    }
+}
+
+// MARK: - TabBar
+enum TabItem: String, CaseIterable {
+    case home, missions, library, parent
+
+    var label: String {
+        switch self {
+        case .home:     return "Home"
+        case .missions: return "Missions"
+        case .library:  return "Stickers"
+        case .parent:   return "Parent"
+        }
+    }
+    var icon: QuackIconName {
+        switch self {
+        case .home:     return .home
+        case .missions: return .mission
+        case .library:  return .book
+        case .parent:   return .parent
+        }
+    }
+}
+
+struct TabBar: View {
+    @Binding var active: TabItem
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(TabItem.allCases, id: \.self) { tab in
+                let on = active == tab
+                Button { active = tab } label: {
+                    VStack(spacing: 3) {
+                        RoundedRectangle(cornerRadius: 999)
+                            .fill(on ? Color.quackOrange : Color.clear)
+                            .frame(width: 28, height: 4)
+
+                        QuackIcon(name: tab.icon, size: 24,
+                                  color: on ? .quackOrange : .inkMuted,
+                                  strokeWidth: on ? 2.2 : 1.8)
+
+                        Text(tab.label)
+                            .font(.system(size: 10, weight: .heavy))
+                            .tracking(0.4)
+                            .foregroundStyle(on ? Color.quackOrange : Color.inkMuted)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, 4)
+                }
+                .buttonStyle(TapPress())
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 12)
+        .padding(.bottom, 28)
+        .background(Color.paper)
+        .shadow(color: .ink.opacity(0.08), radius: 8, x: 0, y: -4)
+    }
+}
+
+private struct TabBarPreviewWrapper: View {
+    @State var active: TabItem = .home
+    var body: some View { TabBar(active: $active) }
+}
+
+#Preview("TabBar") {
+    VStack {
+        Spacer()
+        TabBarPreviewWrapper()
+    }
+}

@@ -30,7 +30,7 @@ struct HomeView: View {
         }
         .ignoresSafeArea(edges: .bottom)
         .sheet(isPresented: $showProfile) {
-            ProfilePlaceholder()
+            ProfileView()
         }
     }
 
@@ -280,14 +280,6 @@ struct HomeView: View {
     }
 }
 
-// Placeholder for profile sheet (Phase 3)
-struct ProfilePlaceholder: View {
-    var body: some View {
-        VStack { Text("Profile — Phase 3").font(.display(20)) }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.cream)
-    }
-}
 
 #Preview("HomeView") {
     @Previewable @State var tab = TabItem.home

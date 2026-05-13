@@ -35,14 +35,14 @@ struct MainTabView: View {
 
             case .library:
                 NavigationStack {
-                    LibraryPlaceholder(activeTab: $activeTab)
+                    LibraryView(activeTab: $activeTab)
                         .navigationBarHidden(true)
                 }
                 .transition(.screenIn)
 
             case .parent:
                 NavigationStack {
-                    ParentPlaceholder(activeTab: $activeTab)
+                    ParentView(activeTab: $activeTab)
                         .navigationBarHidden(true)
                 }
                 .transition(.screenIn)
@@ -88,40 +88,6 @@ extension String: @retroactive Identifiable {
     public var id: String { self }
 }
 
-// MARK: - Phase 3 placeholders
-struct LibraryPlaceholder: View {
-    @Binding var activeTab: TabItem
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            VStack {
-                Spacer()
-                Text("Sticker Book").font(.display(24))
-                Text("Coming in Phase 3").font(.bodyText(14)).foregroundStyle(Color.inkMuted)
-                Spacer()
-            }
-            .background(Color.cream)
-            TabBar(active: $activeTab)
-        }
-        .ignoresSafeArea(edges: .bottom)
-    }
-}
-
-struct ParentPlaceholder: View {
-    @Binding var activeTab: TabItem
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            VStack {
-                Spacer()
-                Text("Parent Dashboard").font(.display(24))
-                Text("Coming in Phase 3").font(.bodyText(14)).foregroundStyle(Color.inkMuted)
-                Spacer()
-            }
-            .background(Color.cream)
-            TabBar(active: $activeTab)
-        }
-        .ignoresSafeArea(edges: .bottom)
-    }
-}
 
 #Preview {
     MainTabView()

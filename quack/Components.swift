@@ -1,4 +1,5 @@
 import SwiftUI
+import Sticker
 
 // MARK: - Eyebrow
 struct Eyebrow: View {
@@ -530,6 +531,34 @@ private struct TabBarPreviewWrapper: View {
     VStack {
         Spacer()
         TabBarPreviewWrapper()
+    }
+}
+
+// MARK: - LoopingStickerMotionEffect
+
+struct LoopingStickerMotionEffect: StickerMotionEffect {
+    var speed: Double = 0.4
+    var radius: Double = 0.5
+
+    @Environment(\.stickerShaderUpdater) private var shaderUpdater
+    @State private var size: CGSize = .zero
+
+    func body(content: Content) -> some View {
+        TimelineView(.animation) { timeline in
+            content
+                .onGeometryChange(for: CGSize.self, of: { $0.size }) { _, newSize in
+                    size = newSize
+                }
+                .onChange(of: timeline.date) { _, date in
+                    let t = date.timeIntervalSinceReferenceDate
+                    let x = sin(t * speed) * radius * size.width / 2
+                    let y = cos(t * speed * 0.7) * radius * size.height / 2
+                    shaderUpdater.update(with: .init(x: x, y: y))
+                }
+        }
+        .onDisappear {
+            shaderUpdater.setNeutral()
+        }
     }
 }
 

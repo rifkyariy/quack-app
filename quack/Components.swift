@@ -679,6 +679,27 @@ struct Confetti: View {
     .background(Color.cream)
 }
 
+// MARK: - WaveBar
+struct WaveBar: View {
+    let index: Int
+    var animating: Bool = false
+    var color: Color = .quackOrange
+
+    private let heights: [CGFloat] = [22, 38, 54, 38, 22]
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 3)
+            .fill(color)
+            .frame(width: 6, height: animating ? heights[index % heights.count] : 10)
+            .animation(
+                .easeInOut(duration: 0.36 + Double(index) * 0.08)
+                    .repeatForever(autoreverses: true)
+                    .delay(Double(index) * 0.12),
+                value: animating
+            )
+    }
+}
+
 #Preview("Confetti") {
     ZStack {
         Color.mint.ignoresSafeArea()

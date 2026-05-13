@@ -551,8 +551,8 @@ struct LoopingStickerMotionEffect: StickerMotionEffect {
                 }
                 .onChange(of: timeline.date) { _, date in
                     let t = date.timeIntervalSinceReferenceDate
-                    let x = sin(t * speed) * radius * size.width / 2
-                    let y = cos(t * speed * 0.7) * radius * size.height / 2
+                    let x = sin(t * speed) * radius * Double(size.width) / 2
+                    let y = cos(t * speed * 0.7) * radius * Double(size.height) / 2
                     shaderUpdater.update(with: .init(x: x, y: y))
                 }
         }

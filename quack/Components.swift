@@ -620,6 +620,8 @@ struct StickerTile: View {
             }
             .frame(maxWidth: .infinity)
             .aspectRatio(1, contentMode: .fit)
+            .stickerEffect()
+            .stickerMotionEffect(LoopingStickerMotionEffect())
             .cardShadow()
             .scaleEffect(appeared ? 1 : 0.05)
             .opacity(appeared ? 1 : 0)

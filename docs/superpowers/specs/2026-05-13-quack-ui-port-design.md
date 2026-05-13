@@ -29,11 +29,13 @@ Port every screen, component, interaction, and animation from the `quack_example
 ### Navigation Model
 
 ```
-AppView  (@AppStorage hasOnboarded gate)
+AppView
+├── LaunchSplashView        (every cold start, auto-dismisses ~1.8s)
+│   └── routes to ↓
 ├── OnboardingFlow          (if !hasOnboarded)
 │   ├── SplashView
 │   ├── NameView
-│   ├── AgeView
+│   ├── AgeView             (arc/fan picker — see §7)
 │   └── IntroView
 └── MainTabView             (if hasOnboarded)
     ├── Tab 1: HomeView
@@ -49,6 +51,8 @@ AppView  (@AppStorage hasOnboarded gate)
         └── → SnapPhotoView
 CompleteView                (fullScreenCover, any tab)
 ```
+
+**Debug override:** In DEBUG builds, `AppView.onAppear` sets `hasOnboarded = false`, so splash + onboarding always run. Remove before release.
 
 Each tab wrapped in `NavigationStack`. Missions pushed via `NavigationLink`. `CompleteView` presented as `.fullScreenCover` from `MainTabView`.
 
@@ -235,11 +239,21 @@ Each: `id`, `label`, `tone`.
 
 ### Phase 1 Screens
 
+**LaunchSplashView** *(new — shown every cold start)* — orange bg, Sparkles, "Q" wordmark (72pt `.black` rounded) + "uack" (48pt), Mascot(speaking, 100pt). Auto-dismisses after ~1.8s with scale+opacity-out animation. No user interaction. Routes to `OnboardingFlow` or `MainTabView` based on `hasOnboarded`.
+
 **SplashView** — orange bg, Sparkles, Mascot(speaking, 170pt), "Mission begins" eyebrow, "Hi, I'm Q" h1, subtitle, "Let's go" ink CTA, "Already have an agent?" ghost link.
 
 **NameView** — cream bg, BackBtn, "Step 1 of 3" eyebrow, h1, orange grain card with Sparkles + text input (orange-soft bg, centred, 18pt heavy) + Mascot at bottom, "Continue" CTA.
 
-**AgeView** — cream bg, BackBtn, "Step 2 of 3" eyebrow, horizontal drag wheel (ages 4–12, 110pt spacing, scale+opacity falloff, bounce snap, edge fade gradient), "I am X years old" label, Mascot, "Continue" CTA.
+**AgeView** *(redesigned)* — cream bg, BackBtn, "Step 2 of 3" eyebrow. Orange grain card contains an arc/fan picker:
+- **Shape:** U-shaped arc (bottom half of a circle, radius ~140pt). Circle center is positioned ~60% up in the arc area so items are visible inside the card.
+- **Positions:** 9 items (ages 4–12) evenly spaced on the arc. Selected item sits at the bottom center (6 o'clock = angle 90° in iOS coords). Others fan up and outward on both sides. `angle[i] = 90° + (i - 4) * 22.5°` degrees; `x = cx + r·cos(θ)`, `y = cy + r·sin(θ)`.
+- **Selected item** (i=4, bottom): 64pt white circle, age in 42pt heavy ink, scale 1.0.
+- **Adjacent items** (±1): scale 0.7, opacity 0.6. **Outer items** (±2–4): scale shrinks to 0.45, opacity 0.3.
+- **Drag:** gesture translates to angular offset `Δθ = Δx / radius` radians; all item angles shift together. Spring-snap to nearest 22.5° step on release; clamp so ages stay in 4–12 range.
+- "I am X years old" label below arc (white, 22pt heavy).
+- Mascot(idle, 110pt) pinned to card bottom.
+- "Continue" CTA below card.
 
 **IntroView** — cream bg, BackBtn, "Step 3 of 3" eyebrow, 3 tip cards (icon square + title + body, staggered screen-in), "Start my first mission" orange CTA.
 
@@ -280,10 +294,11 @@ Each: `id`, `label`, `tone`.
 - `Models.swift` — rewrite
 - `Components.swift` — new (Eyebrow, Sparkles, CTAButton, BackBtn, ProgressBar, DailyRing, Pill, QuackCard, TabBar, QuackIcon, StickerTile, Confetti)
 - `Mascot.swift` — new
-- `OnboardingFlow.swift` — new (SplashView, NameView, AgeView, IntroView)
+- `LaunchSplashView.swift` — new (app launch splash, every cold start)
+- `OnboardingFlow.swift` — new (SplashView, NameView, AgeView [arc/fan picker], IntroView)
 - `HomeView.swift` — rewrite
 - `MainTabView.swift` — new
-- `AppView.swift` — new
+- `AppView.swift` — new (DEBUG override: always show onboarding)
 - `Assets.xcassets` — add duck-mascot.png
 
 ### Phase 2 (new)

@@ -3,22 +3,40 @@ import SwiftUI
 struct AppView: View {
     @Environment(AppState.self) private var appState
     @AppStorage("quack.hasOnboarded") private var hasOnboarded = false
+    @State private var showingSplash = true
 
     var body: some View {
-        Group {
-            if hasOnboarded {
-                MainTabView()
+        ZStack {
+            Group {
+                if hasOnboarded {
+                    MainTabView()
+                        .transition(.screenIn)
+                } else {
+                    OnboardingFlow(onComplete: {
+                        withAnimation(.easeOut(duration: 0.32)) {
+                            hasOnboarded = true
+                        }
+                    })
                     .transition(.screenIn)
-            } else {
-                OnboardingFlow(onComplete: {
-                    withAnimation(.easeOut(duration: 0.32)) {
-                        hasOnboarded = true
+                }
+            }
+            .animation(.easeOut(duration: 0.32), value: hasOnboarded)
+
+            if showingSplash {
+                LaunchSplashView {
+                    withAnimation(.easeOut(duration: 0.5)) {
+                        showingSplash = false
                     }
-                })
-                .transition(.screenIn)
+                }
+                .transition(.opacity.combined(with: .scale(scale: 1.05)))
+                .zIndex(1)
             }
         }
-        .animation(.easeOut(duration: 0.32), value: hasOnboarded)
+        .onAppear {
+            #if DEBUG
+            hasOnboarded = false
+            #endif
+        }
     }
 }
 

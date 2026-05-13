@@ -214,17 +214,36 @@ struct AgeView: View {
     let onBack: () -> Void
     let onNext: (Int) -> Void
 
-    private let ages = [4, 5, 6, 7, 8, 9, 10, 11, 12]
-    private let itemWidth: CGFloat = 110
+    private let ages = Array(4...12)          // 9 items, indices 0–8
+    private let radius: CGFloat = 140
+    private let stepAngleDeg: Double = 22.5   // 180° / 8 intervals
 
     @State private var selectedIndex: Int
-    @GestureState private var gesture: (offset: CGFloat, dragging: Bool) = (0, false)
+    @GestureState private var dragOffset: CGFloat = 0
 
     init(initial: Int, onBack: @escaping () -> Void, onNext: @escaping (Int) -> Void) {
         self.initial = initial
         self.onBack = onBack
         self.onNext = onNext
-        _selectedIndex = State(initialValue: max(0, [4,5,6,7,8,9,10,11,12].firstIndex(of: initial) ?? 4))
+        _selectedIndex = State(initialValue: max(0, min(8, initial - 4)))
+    }
+
+    // stepPoints: how many screen-pts equal one age step on the arc
+    private var stepPoints: Double { Double(radius) * stepAngleDeg * .pi / 180 }
+
+    // floating selected position including live drag
+    private var floatSelected: Double {
+        Double(selectedIndex) - Double(dragOffset) / stepPoints
+    }
+
+    // angle in degrees for item i relative to floatSelected
+    // 90° = 6 o'clock (bottom) = selected position
+    private func angleDeg(for i: Int) -> Double {
+        90.0 + (Double(i) - floatSelected) * stepAngleDeg
+    }
+
+    private func itemDist(for i: Int) -> Double {
+        abs(floatSelected - Double(i))
     }
 
     var body: some View {
@@ -261,76 +280,72 @@ struct AgeView: View {
                     Sparkles(count: 4, opacity: 0.5)
 
                     VStack(spacing: 0) {
-                        ZStack {
-                            Circle()
-                                .stroke(Color.white.opacity(0.45), lineWidth: 3)
-                                .fill(Color.white.opacity(0.18))
-                                .frame(width: 110, height: 110)
+                        // Arc picker
+                        GeometryReader { geo in
+                            let cx = geo.size.width / 2
+                            let cy: CGFloat = 30   // circle center near top of area
 
-                            GeometryReader { geo in
-                                let offset = -CGFloat(selectedIndex) * itemWidth + gesture.offset
-                                HStack(spacing: 0) {
-                                    ForEach(ages.indices, id: \.self) { i in
-                                        let dist = abs(CGFloat(i - selectedIndex) - gesture.offset / itemWidth)
-                                        let scale = max(0.5, 1 - dist * 0.18)
-                                        let opacity = max(0.35, 1 - dist * 0.25)
-                                        ZStack {
+                            ZStack {
+                                ForEach(ages.indices, id: \.self) { i in
+                                    let θ = angleDeg(for: i) * .pi / 180
+                                    let x = cx + radius * CGFloat(cos(θ))
+                                    let y = cy + radius * CGFloat(sin(θ))
+                                    let dist = itemDist(for: i)
+                                    let scale = max(0.45, 1.0 - dist * 0.275)
+                                    let opacity = max(0.3, 1.0 - dist * 0.35)
+                                    let isCenter = dist < 0.25
+
+                                    ZStack {
+                                        if isCenter {
                                             Circle()
-                                                .fill(Color.white.opacity(i == selectedIndex ? 1.0 : 0.92))
-                                                .frame(width: 100, height: 100)
+                                                .fill(Color.white)
+                                                .frame(width: 64, height: 64)
                                                 .popShadow()
-                                            Text("\(ages[i])")
-                                                .font(.display(42, weight: .heavy))
-                                                .foregroundStyle(Color.ink)
                                         }
-                                        .frame(width: itemWidth)
-                                        .scaleEffect(scale)
-                                        .opacity(opacity)
+                                        Text("\(ages[i])")
+                                            .font(.display(isCenter ? 42 : 30, weight: .heavy))
+                                            .foregroundStyle(isCenter ? Color.ink : Color.white)
                                     }
+                                    .scaleEffect(scale)
+                                    .opacity(opacity)
+                                    .position(x: x, y: y)
                                 }
-                                .offset(x: geo.size.width / 2 - itemWidth / 2 + offset)
-                                .animation(gesture.dragging ? nil : .spring(response: 0.32, dampingFraction: 0.7), value: offset)
-                                .contentShape(Rectangle())
-                                .gesture(
-                                    DragGesture()
-                                        .updating($gesture) { val, state, _ in
-                                            state = (val.translation.width, true)
-                                        }
-                                        .onEnded { val in
-                                            let steps = Int((-val.translation.width / itemWidth).rounded())
-                                            selectedIndex = max(0, min(ages.count - 1, selectedIndex + steps))
-                                        }
-                                )
                             }
-                            .frame(height: 180)
-                            .clipped()
-                            .overlay(
-                                LinearGradient(
-                                    colors: [Color.quackOrange, .clear, .clear, Color.quackOrange],
-                                    startPoint: .leading, endPoint: .trailing
-                                )
-                                .allowsHitTesting(false)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .contentShape(Rectangle())
+                            .gesture(
+                                DragGesture()
+                                    .updating($dragOffset) { val, state, _ in
+                                        state = val.translation.width
+                                    }
+                                    .onEnded { val in
+                                        let steps = Int(
+                                            (-val.predictedEndTranslation.width / CGFloat(stepPoints))
+                                                .rounded()
+                                        )
+                                        selectedIndex = max(0, min(ages.count - 1, selectedIndex + steps))
+                                    }
                             )
                         }
-                        .frame(height: 180)
-                        .padding(.top, 14)
+                        .frame(height: 220)
+                        .padding(.top, 16)
 
                         VStack(spacing: 2) {
                             Text("I AM")
                                 .font(.system(size: 12, weight: .heavy, design: .rounded))
                                 .tracking(12 * 0.14)
                                 .foregroundStyle(.white.opacity(0.85))
-                            Text("\(ages[selectedIndex]) years old")
+                            Text("\(ages[max(0, min(ages.count - 1, Int(floatSelected.rounded())))]) years old")
                                 .font(.display(22, weight: .heavy))
                                 .foregroundStyle(.white)
                         }
                         .padding(.top, 4)
 
                         Spacer()
-                        Mascot(state: .idle, size: 120)
+                        Mascot(state: .idle, size: 110)
                     }
                 }
-                .frame(maxWidth: .infinity, minHeight: 360)
+                .frame(maxWidth: .infinity, minHeight: 380)
                 .padding(.horizontal, 24)
                 .padding(.top, 14)
 

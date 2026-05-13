@@ -536,28 +536,13 @@ private struct TabBarPreviewWrapper: View {
 
 // MARK: - LoopingStickerMotionEffect
 
-struct LoopingStickerMotionEffect: StickerMotionEffect {
-    var speed: Double = 0.4
-    var radius: Double = 0.5
-
-    @Environment(\.stickerShaderUpdater) private var shaderUpdater
-    @State private var size: CGSize = .zero
-
+struct LoopingStickerMotionEffect: ViewModifier {
     func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
             content
-                .onGeometryChange(for: CGSize.self, of: { $0.size }) { _, newSize in
-                    size = newSize
-                }
-                .onChange(of: timeline.date) { _, date in
-                    let t = date.timeIntervalSinceReferenceDate
-                    let x = sin(t * speed) * radius * Double(size.width) / 2
-                    let y = cos(t * speed * 0.7) * radius * Double(size.height) / 2
-                    shaderUpdater.update(with: .init(x: x, y: y))
-                }
-        }
-        .onDisappear {
-            shaderUpdater.setNeutral()
+                .rotation3DEffect(.degrees(sin(t * 0.4) * 10), axis: (x: 0, y: 1, z: 0), perspective: 0.3)
+                .rotation3DEffect(.degrees(cos(t * 0.28) * 7), axis: (x: 1, y: 0, z: 0), perspective: 0.3)
         }
     }
 }
@@ -621,7 +606,7 @@ struct StickerTile: View {
             .frame(maxWidth: .infinity)
             .aspectRatio(1, contentMode: .fit)
             .stickerEffect()
-            .stickerMotionEffect(LoopingStickerMotionEffect())
+            .modifier(LoopingStickerMotionEffect())
             .cardShadow()
             .scaleEffect(appeared ? 1 : 0.05)
             .opacity(appeared ? 1 : 0)

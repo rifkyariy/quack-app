@@ -112,6 +112,7 @@
 			);
 			name = quack;
 			packageProductDependencies = (
+				0F04323C24F449398B8E4B35 /* Sticker */,
 			);
 			productName = quack;
 			productReference = 41AEEFE02FACFCED00AD4E6C /* quack.app */;
@@ -195,6 +196,9 @@
 			);
 			mainGroup = 41AEEFD72FACFCED00AD4E6C;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				4109B6DB2FB4BE20004139CB /* XCRemoteSwiftPackageReference "Sticker" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 41AEEFE12FACFCED00AD4E6C /* Products */;
 			projectDirPath = "";
@@ -558,6 +562,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4109B6DB2FB4BE20004139CB /* XCRemoteSwiftPackageReference "Sticker" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/bpisano/Sticker";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.4.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0F04323C24F449398B8E4B35 /* Sticker */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4109B6DB2FB4BE20004139CB /* XCRemoteSwiftPackageReference "Sticker" */;
+			productName = Sticker;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 41AEEFD82FACFCED00AD4E6C /* Project object */;
 }

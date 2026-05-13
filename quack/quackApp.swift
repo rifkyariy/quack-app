@@ -6,7 +6,7 @@ struct quackApp: App {
     @State private var appState = AppState()
 
     init() {
-        ShaderLibrary.compileStickerShaders()
+        Task { await ShaderLibrary.compileStickerShaders() }
     }
 
     var body: some Scene {

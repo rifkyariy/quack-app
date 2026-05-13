@@ -643,19 +643,17 @@ struct Confetti: View {
                     let elapsed = (now - piece.delay).truncatingRemainder(dividingBy: piece.duration + 0.5)
                     guard elapsed > 0 else { continue }
                     let progress = elapsed / (piece.duration + 0.5)
-                    let y = -20 + progress * (size.height + 40)
-                    let x = piece.x * size.width
+                    let py = -20 + progress * (size.height + 40)
+                    let px = piece.x * size.width
                     let rot = Angle.degrees(piece.rotation + progress * 720)
-
-                    ctx.translateBy(x: x, y: y)
-                    ctx.rotate(by: rot)
                     let w: CGFloat = piece.shape == 0 ? 10 : 14
                     let h: CGFloat = piece.shape == 1 ? 16 : 10
                     let rect = CGRect(x: -w/2, y: -h/2, width: w, height: h)
                     let path = piece.shape == 2 ? Path(ellipseIn: rect) : Path(roundedRect: rect, cornerRadius: 2)
-                    ctx.fill(path, with: .color(confettiColors[piece.colorIndex].opacity(1 - progress * 0.5)))
-                    ctx.translateBy(x: -x, y: -y)
-                    ctx.rotate(by: .degrees(-rot.degrees))
+                    var copy = ctx
+                    copy.translateBy(x: px, y: py)
+                    copy.rotate(by: rot)
+                    copy.fill(path, with: .color(confettiColors[piece.colorIndex].opacity(1 - progress * 0.5)))
                 }
             }
         }

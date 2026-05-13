@@ -3,14 +3,17 @@ import SwiftUI
 struct MainTabView: View {
     @Environment(AppState.self) private var appState
     @State private var activeTab: TabItem = .home
-    @State private var activeMission: ActiveMission? = nil
-    @State private var showComplete = false
-    @State private var earnedVocabId: String? = nil
+    @State private var fullScreen: FullScreenState? = nil
 
-    struct ActiveMission: Identifiable {
-        let id = UUID()
-        let type: MissionType
-        let vocab: VocabItem
+    enum FullScreenState: Identifiable {
+        case mission(MissionType, VocabItem)
+        case complete(VocabItem)
+        var id: String {
+            switch self {
+            case .mission(let t, let v): "m-\(t.rawValue)-\(v.id)"
+            case .complete(let v):       "c-\(v.id)-\(UUID())"
+            }
+        }
     }
 
     var body: some View {
@@ -46,42 +49,37 @@ struct MainTabView: View {
             }
         }
         .animation(.easeOut(duration: 0.22), value: activeTab)
-        .fullScreenCover(item: $activeMission) { mission in
-            missionView(for: mission)
+        .fullScreenCover(item: $fullScreen) { state in
+            coverView(for: state)
                 .environment(appState)
-        }
-        .fullScreenCover(isPresented: $showComplete) {
-            if let id = earnedVocabId, let earned = VOCAB.first(where: { $0.id == id }) {
-                CompleteView(earned: earned, onDone: { showComplete = false })
-                    .environment(appState)
-            }
         }
     }
 
     private func launchMission(_ type: MissionType, _ vocab: VocabItem) {
-        activeMission = ActiveMission(type: type, vocab: vocab)
+        fullScreen = .mission(type, vocab)
     }
 
     private func missionComplete(_ vocabId: String) {
         appState.addLearned(vocabId)
-        earnedVocabId = vocabId
-        activeMission = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-            showComplete = true
+        let earned = VOCAB.first { $0.id == vocabId } ?? VOCAB[0]
+        fullScreen = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+            fullScreen = .complete(earned)
         }
     }
 
     @ViewBuilder
-    private func missionView(for mission: ActiveMission) -> some View {
-        switch mission.type {
-        case .camera:
-            CameraMissionView(vocab: mission.vocab, onComplete: missionComplete)
-        case .speak:
-            SpeakMissionView(vocab: mission.vocab, onComplete: missionComplete)
-        case .match:
-            MatchMissionView(target: mission.vocab, onComplete: missionComplete)
-        case .story:
-            StoryMissionView(vocab: mission.vocab, onComplete: missionComplete)
+    private func coverView(for state: FullScreenState) -> some View {
+        switch state {
+        case .mission(let type, let vocab):
+            switch type {
+            case .camera: CameraMissionView(vocab: vocab, onComplete: missionComplete)
+            case .speak:  SpeakMissionView(vocab: vocab, onComplete: missionComplete)
+            case .match:  MatchMissionView(target: vocab, onComplete: missionComplete)
+            case .story:  StoryMissionView(vocab: vocab, onComplete: missionComplete)
+            }
+        case .complete(let earned):
+            CompleteView(earned: earned, onDone: { fullScreen = nil })
         }
     }
 }

@@ -214,9 +214,8 @@ struct AgeView: View {
     let onBack: () -> Void
     let onNext: (Int) -> Void
 
-    private let ages = Array(4...12)          // 9 items, indices 0–8
-    private let radius: CGFloat = 140
-    private let stepAngleDeg: Double = 22.5   // 180° / 8 intervals
+    private let ages = Array(4...12)
+    private let itemW: CGFloat = 72
 
     @State private var selectedIndex: Int
     @GestureState private var dragOffset: CGFloat = 0
@@ -228,22 +227,8 @@ struct AgeView: View {
         _selectedIndex = State(initialValue: max(0, min(8, initial - 4)))
     }
 
-    // stepPoints: how many screen-pts equal one age step on the arc
-    private var stepPoints: Double { Double(radius) * stepAngleDeg * .pi / 180 }
-
-    // floating selected position including live drag
     private var floatSelected: Double {
-        Double(selectedIndex) - Double(dragOffset) / stepPoints
-    }
-
-    // angle in degrees for item i relative to floatSelected
-    // 90° = 6 o'clock (bottom) = selected position
-    private func angleDeg(for i: Int) -> Double {
-        90.0 + (Double(i) - floatSelected) * stepAngleDeg
-    }
-
-    private func itemDist(for i: Int) -> Double {
-        abs(floatSelected - Double(i))
+        Double(selectedIndex) - Double(dragOffset) / Double(itemW)
     }
 
     var body: some View {
@@ -263,7 +248,7 @@ struct AgeView: View {
                     Text("How old are you?")
                         .font(.display(28, weight: .heavy))
                         .foregroundStyle(Color.ink)
-                    Text("Drag to spin · Q sets the level")
+                    Text("Slide to pick · Q sets the level")
                         .font(.bodyText(13))
                         .foregroundStyle(Color.inkMuted)
                 }
@@ -280,35 +265,50 @@ struct AgeView: View {
                     Sparkles(count: 4, opacity: 0.5)
 
                     VStack(spacing: 0) {
-                        // Arc picker
+                        // Horizontal ruler picker
                         GeometryReader { geo in
                             let cx = geo.size.width / 2
-                            let cy: CGFloat = 30   // circle center near top of area
+                            let baseOffset = cx - CGFloat(floatSelected) * itemW - itemW / 2
 
                             ZStack {
-                                ForEach(ages.indices, id: \.self) { i in
-                                    let θ = angleDeg(for: i) * .pi / 180
-                                    let x = cx + radius * CGFloat(cos(θ))
-                                    let y = cy + radius * CGFloat(sin(θ))
-                                    let dist = itemDist(for: i)
-                                    let scale = max(0.45, 1.0 - dist * 0.275)
-                                    let opacity = max(0.3, 1.0 - dist * 0.35)
-                                    let isCenter = dist < 0.25
+                                HStack(spacing: 0) {
+                                    ForEach(ages.indices, id: \.self) { i in
+                                        let dist = abs(floatSelected - Double(i))
+                                        let isCenter = dist < 0.35
+                                        let scale = max(0.5, 1.0 - dist * 0.28)
+                                        let opacity = max(0.25, 1.0 - dist * 0.38)
 
-                                    ZStack {
-                                        if isCenter {
-                                            Circle()
-                                                .fill(Color.white)
-                                                .frame(width: 64, height: 64)
-                                                .popShadow()
+                                        ZStack {
+                                            if isCenter {
+                                                Circle()
+                                                    .fill(Color.white)
+                                                    .frame(width: 64, height: 64)
+                                                    .popShadow()
+                                            }
+                                            Text("\(ages[i])")
+                                                .font(.display(isCenter ? 40 : 26, weight: .heavy))
+                                                .foregroundStyle(isCenter ? Color.ink : Color.white)
                                         }
-                                        Text("\(ages[i])")
-                                            .font(.display(isCenter ? 42 : 30, weight: .heavy))
-                                            .foregroundStyle(isCenter ? Color.ink : Color.white)
+                                        .frame(width: itemW, height: 80)
+                                        .scaleEffect(scale)
+                                        .opacity(opacity)
                                     }
-                                    .scaleEffect(scale)
-                                    .opacity(opacity)
-                                    .position(x: x, y: y)
+                                }
+                                .offset(x: baseOffset)
+
+                                // Edge fade gradients
+                                HStack {
+                                    LinearGradient(
+                                        colors: [Color.quackOrange, Color.quackOrange.opacity(0)],
+                                        startPoint: .leading, endPoint: .trailing
+                                    )
+                                    .frame(width: 48)
+                                    Spacer()
+                                    LinearGradient(
+                                        colors: [Color.quackOrange.opacity(0), Color.quackOrange],
+                                        startPoint: .leading, endPoint: .trailing
+                                    )
+                                    .frame(width: 48)
                                 }
                             }
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -320,15 +320,14 @@ struct AgeView: View {
                                     }
                                     .onEnded { val in
                                         let steps = Int(
-                                            (-val.predictedEndTranslation.width / CGFloat(stepPoints))
-                                                .rounded()
+                                            (-val.predictedEndTranslation.width / itemW).rounded()
                                         )
                                         selectedIndex = max(0, min(ages.count - 1, selectedIndex + steps))
                                     }
                             )
                         }
-                        .frame(height: 220)
-                        .padding(.top, 16)
+                        .frame(height: 100)
+                        .padding(.top, 24)
 
                         VStack(spacing: 2) {
                             Text("I AM")
@@ -339,13 +338,13 @@ struct AgeView: View {
                                 .font(.display(22, weight: .heavy))
                                 .foregroundStyle(.white)
                         }
-                        .padding(.top, 4)
+                        .padding(.top, 8)
 
                         Spacer()
                         Mascot(state: .idle, size: 110)
                     }
                 }
-                .frame(maxWidth: .infinity, minHeight: 380)
+                .frame(maxWidth: .infinity, minHeight: 320)
                 .padding(.horizontal, 24)
                 .padding(.top, 14)
 

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(AppState.self) private var appState
-    var onMission: (String) -> Void
+    var onMission: (MissionType, VocabItem) -> Void
     @Binding var activeTab: TabItem
 
     @State private var showProfile = false
@@ -99,7 +99,7 @@ struct HomeView: View {
 
     // MARK: - Today's mission hero card
     private var missionHeroCard: some View {
-        Button { onMission("camera") } label: {
+        Button { if let word = todayWord { onMission(.camera, word) } } label: {
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 28)
                     .fill(Color.quackOrange)
@@ -240,38 +240,36 @@ struct HomeView: View {
 
     // MARK: - Training type grid
     private var trainingGrid: some View {
-        let types: [(id: String, label: String, sub: String, tone: Tone, icon: QuackIconName)] = [
-            ("camera", "Camera scan", "Point at it", .orange, .camera),
-            ("speak",  "Say it back", "Mic check",   .cobalt, .mic),
-            ("match",  "Match cards", "Word ↔ pic",  .rose,   .star),
-            ("story",  "Q's story",   "Listen & learn", .mint, .book),
-        ]
-        return VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("Pick your training")
                 .font(.display(18, weight: .heavy))
                 .foregroundStyle(Color.ink)
 
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                ForEach(types, id: \.id) { t in
-                    Button { onMission(t.id) } label: {
+            LazyVGrid(
+                columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                spacing: 10
+            ) {
+                ForEach(MissionType.allCases) { type in
+                    Button {
+                        let word = todayWord ?? VOCAB[0]
+                        onMission(type, word)
+                    } label: {
                         VStack(alignment: .leading, spacing: 8) {
-                            QuackIcon(name: t.icon, size: 22, color: t.tone.fg, strokeWidth: 2)
-
+                            QuackIcon(name: type.icon, size: 22, color: type.tone.fg, strokeWidth: 2)
                             Spacer()
-
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(t.label)
+                                Text(type.title)
                                     .font(.display(16, weight: .heavy))
-                                    .foregroundStyle(t.tone.fg)
-                                Text(t.sub)
+                                    .foregroundStyle(type.tone.fg)
+                                Text(type.subtitle)
                                     .font(.bodyText(11, weight: .bold))
-                                    .foregroundStyle(t.tone.fg.opacity(0.8))
+                                    .foregroundStyle(type.tone.fg.opacity(0.8))
                             }
                         }
                         .padding(14)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .frame(minHeight: 110)
-                        .quackCard(tone: t.tone)
+                        .quackCard(tone: type.tone)
                     }
                     .buttonStyle(TapPress())
                 }
@@ -296,6 +294,6 @@ struct ProfilePlaceholder: View {
     let state = AppState()
     state.streak = 4
     state.dailyProgress = 1
-    return HomeView(onMission: { _ in }, activeTab: $tab)
+    return HomeView(onMission: { _, _ in }, activeTab: $tab)
         .environment(state)
 }

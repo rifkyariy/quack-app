@@ -3,21 +3,29 @@ import SwiftUI
 struct MainTabView: View {
     @Environment(AppState.self) private var appState
     @State private var activeTab: TabItem = .home
-    @State private var missionType: String? = nil
+    @State private var activeMission: ActiveMission? = nil
+    @State private var showComplete = false
+    @State private var earnedVocabId: String? = nil
+
+    struct ActiveMission: Identifiable {
+        let id = UUID()
+        let type: MissionType
+        let vocab: VocabItem
+    }
 
     var body: some View {
         ZStack {
             switch activeTab {
             case .home:
                 NavigationStack {
-                    HomeView(onMission: { type in missionType = type }, activeTab: $activeTab)
+                    HomeView(onMission: launchMission, activeTab: $activeTab)
                         .navigationBarHidden(true)
                 }
                 .transition(.screenIn)
 
             case .missions:
                 NavigationStack {
-                    MissionsPlaceholder(activeTab: $activeTab)
+                    MissionsHubView(onStartMission: launchMission, activeTab: $activeTab)
                         .navigationBarHidden(true)
                 }
                 .transition(.screenIn)
@@ -38,8 +46,42 @@ struct MainTabView: View {
             }
         }
         .animation(.easeOut(duration: 0.22), value: activeTab)
-        .sheet(item: $missionType) { type in
-            MissionPlaceholder(type: type, onDismiss: { missionType = nil })
+        .fullScreenCover(item: $activeMission) { mission in
+            missionView(for: mission)
+                .environment(appState)
+        }
+        .fullScreenCover(isPresented: $showComplete) {
+            if let id = earnedVocabId, let earned = VOCAB.first(where: { $0.id == id }) {
+                CompleteView(earned: earned, onDone: { showComplete = false })
+                    .environment(appState)
+            }
+        }
+    }
+
+    private func launchMission(_ type: MissionType, _ vocab: VocabItem) {
+        activeMission = ActiveMission(type: type, vocab: vocab)
+    }
+
+    private func missionComplete(_ vocabId: String) {
+        appState.addLearned(vocabId)
+        earnedVocabId = vocabId
+        activeMission = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            showComplete = true
+        }
+    }
+
+    @ViewBuilder
+    private func missionView(for mission: ActiveMission) -> some View {
+        switch mission.type {
+        case .camera:
+            CameraMissionView(vocab: mission.vocab, onComplete: missionComplete)
+        case .speak:
+            SpeakMissionView(vocab: mission.vocab, onComplete: missionComplete)
+        case .match:
+            MatchMissionView(target: mission.vocab, onComplete: missionComplete)
+        case .story:
+            StoryMissionView(vocab: mission.vocab, onComplete: missionComplete)
         }
     }
 }
@@ -48,24 +90,7 @@ extension String: @retroactive Identifiable {
     public var id: String { self }
 }
 
-// MARK: - Phase 2 / 3 placeholders
-struct MissionsPlaceholder: View {
-    @Binding var activeTab: TabItem
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            VStack {
-                Spacer()
-                Text("Missions Hub").font(.display(24))
-                Text("Coming in Phase 2").font(.bodyText(14)).foregroundStyle(Color.inkMuted)
-                Spacer()
-            }
-            .background(Color.cream)
-            TabBar(active: $activeTab)
-        }
-        .ignoresSafeArea(edges: .bottom)
-    }
-}
-
+// MARK: - Phase 3 placeholders
 struct LibraryPlaceholder: View {
     @Binding var activeTab: TabItem
     var body: some View {
@@ -97,21 +122,6 @@ struct ParentPlaceholder: View {
             TabBar(active: $activeTab)
         }
         .ignoresSafeArea(edges: .bottom)
-    }
-}
-
-struct MissionPlaceholder: View {
-    let type: String
-    let onDismiss: () -> Void
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("Mission: \(type)").font(.display(24))
-            Text("Coming in Phase 2").font(.bodyText(14)).foregroundStyle(Color.inkMuted)
-            CTAButton(label: "Close", variant: .ink, action: onDismiss)
-                .padding(.horizontal, 32)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.cream)
     }
 }
 

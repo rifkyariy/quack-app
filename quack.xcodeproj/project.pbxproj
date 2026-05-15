@@ -6,6 +6,14 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8516A4552FB7592F00F0348B /* Sticker in Frameworks */ = {isa = PBXBuildFile; productRef = 0F04323C24F449398B8E4B35 /* Sticker */; };
+		D110A001000000000000F801 /* gemma-4-E2B-it.litertlm in Resources */ = {isa = PBXBuildFile; fileRef = D110A001000000000000F901 /* gemma-4-E2B-it.litertlm */; };
+		D110A001000000000000F802 /* chat_template.jinja in Resources */ = {isa = PBXBuildFile; fileRef = D110A001000000000000F902 /* chat_template.jinja */; };
+		D110A001000000000000FF01 /* libGemmaModelConstraintProvider.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		D110A001000000000000FF02 /* libLiteRtMetalAccelerator.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = D110A001000000000000FE02 /* libLiteRtMetalAccelerator.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		41AEEFEE2FACFCF000AD4E6C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -23,10 +31,29 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		D110A001000000000000FD01 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				D110A001000000000000FF01 /* libGemmaModelConstraintProvider.dylib in Embed Frameworks */,
+				D110A001000000000000FF02 /* libLiteRtMetalAccelerator.dylib in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		41AEEFE02FACFCED00AD4E6C /* quack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = quack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		41AEEFED2FACFCF000AD4E6C /* quackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = quackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		41AEEFF72FACFCF000AD4E6C /* quackUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = quackUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D110A001000000000000F901 /* gemma-4-E2B-it.litertlm */ = {isa = PBXFileReference; lastKnownFileType = file; name = "gemma-4-E2B-it.litertlm"; path = "/Volumes/Data/Developments/apple/Swift/Spiku/Spiku/Resources/gemma-4-E2B-it.litertlm"; sourceTree = "<absolute>"; };
+		D110A001000000000000F902 /* chat_template.jinja */ = {isa = PBXFileReference; lastKnownFileType = text; name = chat_template.jinja; path = /Volumes/Data/Developments/apple/Swift/Spiku/Spiku/Resources/chat_template.jinja; sourceTree = "<absolute>"; };
+		D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libGemmaModelConstraintProvider.dylib; path = /Volumes/Data/Developments/apple/Swift/LiteRTLib/libGemmaModelConstraintProvider.dylib; sourceTree = "<absolute>"; };
+		D110A001000000000000FE02 /* libLiteRtMetalAccelerator.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libLiteRtMetalAccelerator.dylib; path = /Volumes/Data/Developments/apple/Swift/LiteRTLib/libLiteRtMetalAccelerator.dylib; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -52,6 +79,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8516A4552FB7592F00F0348B /* Sticker in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +106,7 @@
 				41AEEFE22FACFCED00AD4E6C /* quack */,
 				41AEEFF02FACFCF000AD4E6C /* quackTests */,
 				41AEEFFA2FACFCF000AD4E6C /* quackUITests */,
+				D110A001000000000000FC01 /* Frameworks */,
 				41AEEFE12FACFCED00AD4E6C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -92,6 +121,17 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		D110A001000000000000FC01 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */,
+				D110A001000000000000FE02 /* libLiteRtMetalAccelerator.dylib */,
+				D110A001000000000000F901 /* gemma-4-E2B-it.litertlm */,
+				D110A001000000000000F902 /* chat_template.jinja */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -102,6 +142,7 @@
 				41AEEFDC2FACFCED00AD4E6C /* Sources */,
 				41AEEFDD2FACFCED00AD4E6C /* Frameworks */,
 				41AEEFDE2FACFCED00AD4E6C /* Resources */,
+				D110A001000000000000FD01 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -216,6 +257,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D110A001000000000000F801 /* gemma-4-E2B-it.litertlm in Resources */,
+				D110A001000000000000F802 /* chat_template.jinja in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -308,7 +351,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = A642FFR346;
+				DEVELOPMENT_TEAM = 4JH6AF2L77;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -372,7 +415,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = A642FFR346;
+				DEVELOPMENT_TEAM = 4JH6AF2L77;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -399,11 +442,27 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = A642FFR346;
+				DEVELOPMENT_TEAM = 4JH6AF2L77;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/quack",
+					"$(SRCROOT)/quack/AI",
+					"/Volumes/Data/bazel_root/execroot/litert_lm/bazel-out/ios_arm64-opt/bin/external/litert",
+					/Volumes/Data/Developments/apple/Swift/litertrepo,
+					/Volumes/Data/bazel_root/external/com_google_absl,
+					/Volumes/Data/bazel_root/external/nlohmann_json/single_include,
+					/Volumes/Data/bazel_root/external/litert,
+					/Volumes/Data/bazel_root/external/com_google_protobuf/src,
+					"/Volumes/Data/bazel_root/execroot/litert_lm/bazel-out/ios_arm64-opt/bin",
+					/Volumes/Data/bazel_root/external/flatbuffers/include,
+					"/Volumes/Data/bazel_root/external/crate_index__cxx-1.0.149/include",
+				);
+				INFOPLIST_KEY_NSCameraUsageDescription = "Quack uses the camera so the duck can see and recognize the objects you point at.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Quack uses the microphone to hear you say new words and give pronunciation feedback.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -413,10 +472,25 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/Volumes/Data/Developments/apple/Swift/LiteRTLib,
+				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = X.quack;
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-lGemmaModelConstraintProvider",
+					"-framework",
+					AVFoundation,
+					"-framework",
+					AudioToolbox,
+					"-force_load",
+					/Volumes/Data/Developments/apple/Swift/LiteRTLib/liblitert_lm_complete.a,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.satyaadhiyaksa.quack;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "quack/quack-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -427,11 +501,27 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = A642FFR346;
+				DEVELOPMENT_TEAM = 4JH6AF2L77;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/quack",
+					"$(SRCROOT)/quack/AI",
+					"/Volumes/Data/bazel_root/execroot/litert_lm/bazel-out/ios_arm64-opt/bin/external/litert",
+					/Volumes/Data/Developments/apple/Swift/litertrepo,
+					/Volumes/Data/bazel_root/external/com_google_absl,
+					/Volumes/Data/bazel_root/external/nlohmann_json/single_include,
+					/Volumes/Data/bazel_root/external/litert,
+					/Volumes/Data/bazel_root/external/com_google_protobuf/src,
+					"/Volumes/Data/bazel_root/execroot/litert_lm/bazel-out/ios_arm64-opt/bin",
+					/Volumes/Data/bazel_root/external/flatbuffers/include,
+					"/Volumes/Data/bazel_root/external/crate_index__cxx-1.0.149/include",
+				);
+				INFOPLIST_KEY_NSCameraUsageDescription = "Quack uses the camera so the duck can see and recognize the objects you point at.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Quack uses the microphone to hear you say new words and give pronunciation feedback.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -441,10 +531,25 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/Volumes/Data/Developments/apple/Swift/LiteRTLib,
+				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = X.quack;
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-lGemmaModelConstraintProvider",
+					"-framework",
+					AVFoundation,
+					"-framework",
+					AudioToolbox,
+					"-force_load",
+					/Volumes/Data/Developments/apple/Swift/LiteRTLib/liblitert_lm_complete.a,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.satyaadhiyaksa.quack;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "quack/quack-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -456,11 +561,11 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = A642FFR346;
+				DEVELOPMENT_TEAM = 4JH6AF2L77;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = MIT.quackTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.satyaadhiyaksa.quackTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -475,11 +580,11 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = A642FFR346;
+				DEVELOPMENT_TEAM = 4JH6AF2L77;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = MIT.quackTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.satyaadhiyaksa.quackTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -493,10 +598,10 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = A642FFR346;
+				DEVELOPMENT_TEAM = 4JH6AF2L77;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = MIT.quackUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.satyaadhiyaksa.quackUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -510,10 +615,10 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = A642FFR346;
+				DEVELOPMENT_TEAM = 4JH6AF2L77;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = MIT.quackUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.satyaadhiyaksa.quackUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;

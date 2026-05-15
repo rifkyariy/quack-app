@@ -640,12 +640,16 @@ private let confettiColors: [Color] = [.quackOrange, .quackYellow, .mint, .cobal
 struct Confetti: View {
     var count: Int = 30
 
-    private let pieces: [ConfettiPiece] = (0..<30).map { i in
-        ConfettiPiece(
-            x: Double(i * 3337 % 100) / 100,
-            delay: Double(i * 1234 % 800) / 1000,
-            duration: 1.6 + Double(i * 567 % 1600) / 1000,
-            rotation: Double(i * 137 % 360),
+    private let pieces: [ConfettiPiece] = (0..<30).map { (i: Int) -> ConfettiPiece in
+        let x = Double(i * 3337 % 100) / 100
+        let delay = Double(i * 1234 % 800) / 1000
+        let duration = 1.6 + Double(i * 567 % 1600) / 1000
+        let rotation = Double(i * 137 % 360)
+        return ConfettiPiece(
+            x: x,
+            delay: delay,
+            duration: duration,
+            rotation: rotation,
             colorIndex: i % 5,
             shape: i % 3
         )

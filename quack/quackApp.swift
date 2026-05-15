@@ -7,6 +7,7 @@ struct quackApp: App {
 
     init() {
         Task { try? await ShaderLibrary.compileStickerShaders() }
+        QuackGemma.shared.preload()
         Task.detached(priority: .utility) { await GemmaSmokeTest.run() }
     }
 

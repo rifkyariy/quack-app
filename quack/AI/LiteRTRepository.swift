@@ -199,6 +199,38 @@ actor LiteRTRepository: InferenceRepository {
         )
     }
 
+    // MARK: - General-purpose inference (Quack)
+
+    /// Text inference with a custom prompt. Returns the raw model output.
+    func inferText(prompt: String) async throws -> String {
+        guard let bridge = bridge, isInitialized else {
+            throw RepositoryError.notInitialized
+        }
+        guard let output = bridge.infer(withPrompt: prompt) else {
+            throw RepositoryError.inferenceFailed("No output from text inference")
+        }
+        return output
+    }
+
+    /// Multimodal audio inference with a custom prompt. Audio must be raw
+    /// 16-bit signed LE PCM at 16 kHz mono — this method handles WAV framing.
+    func inferAudio(audioData: Data, prompt: String) async throws -> String {
+        guard let bridge = bridge, isInitialized else {
+            throw RepositoryError.notInitialized
+        }
+        let wavPath = try writeWAVFile(
+            pcmData: audioData,
+            sampleRate: 16000,
+            channels: 1,
+            bitsPerSample: 16
+        )
+        defer { try? FileManager.default.removeItem(atPath: wavPath) }
+        guard let output = bridge.infer(withAudioPath: wavPath, prompt: prompt) else {
+            throw RepositoryError.inferenceFailed("No output from audio inference")
+        }
+        return output
+    }
+
     /// Writes raw 16-bit PCM data as a WAV file and returns the file path.
     private func writeWAVFile(pcmData: Data, sampleRate: Int, channels: Int, bitsPerSample: Int) throws -> String {
         let tempDir = NSTemporaryDirectory()

@@ -29,6 +29,7 @@ final class CameraCapture: NSObject {
     private let photoOutput = AVCapturePhotoOutput()
     private var configured = false
     private var captureContinuation: CheckedContinuation<Data, Error>?
+    private let sessionQueue = DispatchQueue(label: "dev.quack.camera.session")
 
     /// True when this device actually has a usable camera (false in Simulator).
     var isAvailable: Bool {
@@ -75,22 +76,31 @@ final class CameraCapture: NSObject {
         configured = true
     }
 
-    /// Starts the capture session on a background queue (startRunning blocks).
+    /// Starts the capture session on a serial background queue.
     func start() {
         guard configured else { return }
         let session = self.session
-        Task.detached { if !session.isRunning { session.startRunning() } }
+        sessionQueue.async { if !session.isRunning { session.startRunning() } }
     }
 
-    /// Stops the capture session on a background queue.
+    /// Stops the capture session. Resumes any in-flight capture with an error
+    /// first — stopRunning may otherwise drop the delegate callback, leaking
+    /// the continuation and hanging its awaiting task.
     func stop() {
+        if let continuation = captureContinuation {
+            captureContinuation = nil
+            continuation.resume(throwing: CaptureError.captureFailed("Capture cancelled"))
+        }
         let session = self.session
-        Task.detached { if session.isRunning { session.stopRunning() } }
+        sessionQueue.async { if session.isRunning { session.stopRunning() } }
     }
 
     /// Captures one still photo and returns it as a downscaled JPEG.
     func capturePhoto() async throws -> Data {
         guard configured else { throw CaptureError.unavailable }
+        guard captureContinuation == nil else {
+            throw CaptureError.captureFailed("A capture is already in progress")
+        }
         return try await withCheckedThrowingContinuation { continuation in
             self.captureContinuation = continuation
             self.photoOutput.capturePhoto(

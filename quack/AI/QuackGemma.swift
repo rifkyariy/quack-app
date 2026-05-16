@@ -84,6 +84,57 @@ final class QuackGemma {
         return PronunciationResult(score: score, heard: heard)
     }
 
+    struct VisionResult {
+        /// What Gemma said the photo contains (raw, trimmed).
+        let recognized: String
+        /// Whether `recognized` matches the target vocab word.
+        let matched: Bool
+    }
+
+    /// Asks Gemma to name the main object in a photo, then checks that name
+    /// against the target vocab item. Uses open-ended naming rather than a
+    /// yes/no question — handing a small model the expected answer biases it
+    /// toward agreement (same reason scorePronunciation hides the target).
+    func recognizeObject(image: Data, target: VocabItem) async throws -> VisionResult {
+        try await ensureReady()
+        let prompt = """
+        Look at this photo. What is the main object in it? \
+        Answer with just one or two words in English, all lowercase, no \
+        punctuation, no description, no sentence.
+        If you cannot tell, respond with exactly: none
+        Respond on a single line.
+        """
+        let raw = try await repo.inferImage(imageData: image, prompt: prompt)
+        let recognized = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let matched = Self.objectMatches(recognized: recognized, target: target.en)
+        print("[QuackGemma] recognizeObject target=\(target.en) raw='\(recognized)' matched=\(matched)")
+        return VisionResult(recognized: recognized, matched: matched)
+    }
+
+    /// Decides whether Gemma's recognized object name matches the target
+    /// English word. Lenient on purpose — kids' framing tolerates "a cat" or
+    /// "grapes" for "grape". Returns false when the model signaled "none".
+    static func objectMatches(recognized rawRecognized: String, target rawTarget: String) -> Bool {
+        let recognized = normalize(rawRecognized)
+        let target = normalize(rawTarget)
+        if recognized.isEmpty || recognized == "none" || recognized.contains("none") {
+            return false
+        }
+        guard !target.isEmpty else { return false }
+        // normalize() strips to a–z and drops spaces, so "a cat" -> "acat";
+        // containment in either direction catches articles, plurals, and
+        // compound answers ("red apple").
+        if recognized.contains(target) || target.contains(recognized) {
+            return true
+        }
+        // Fuzzy fallback tolerates a near-miss spelling of the same word.
+        let distance = levenshtein(recognized, target)
+        let maxLen = max(recognized.count, target.count)
+        guard maxLen > 0 else { return false }
+        let similarity = 1.0 - Double(distance) / Double(maxLen)
+        return similarity >= 0.8
+    }
+
     /// Computes a 0–100 score from a heard pinyin transcription against the
     /// target pinyin. Returns 0 when the model signaled "none".
     static func pronunciationScore(heard rawHeard: String, target rawTarget: String) -> Int {

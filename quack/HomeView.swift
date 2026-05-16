@@ -6,6 +6,8 @@ struct HomeView: View {
     @Binding var activeTab: TabItem
 
     @State private var showProfile = false
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    private var isLandscape: Bool { verticalSizeClass == .compact }
 
     private var todayWord: VocabItem? {
         VOCAB.first { $0.id == appState.todayMission.target }
@@ -16,11 +18,25 @@ struct HomeView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     greetingHeader
-                    dailyRingCard
-                    missionHeroCard
-                    statCards
-                    recentStickers
-                    trainingGrid
+                    if isLandscape {
+                        HStack(alignment: .top, spacing: 0) {
+                            missionHeroCard
+                                .frame(maxWidth: .infinity)
+                            VStack(spacing: 0) {
+                                dailyRingCard
+                                statCards
+                                recentStickers
+                                trainingGrid
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    } else {
+                        dailyRingCard
+                        missionHeroCard
+                        statCards
+                        recentStickers
+                        trainingGrid
+                    }
                     Spacer().frame(height: 120)
                 }
             }

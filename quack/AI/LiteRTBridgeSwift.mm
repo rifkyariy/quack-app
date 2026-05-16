@@ -106,6 +106,23 @@
     }
 }
 
+- (NSString *)inferWithImagePath:(NSString *)imagePath prompt:(NSString *)prompt {
+    LiteRTBridge *bridge = static_cast<LiteRTBridge *>(self.bridgePtr);
+    if (!bridge || !self.isReady) {
+        return nil;
+    }
+
+    try {
+        std::string result = bridge->inferWithImage(
+            imagePath.UTF8String, prompt.UTF8String);
+        if (result.empty()) return nil;
+        return [NSString stringWithUTF8String:result.c_str()];
+    } catch (const std::exception& e) {
+        NSLog(@"Image inference failed: %s", e.what());
+        return nil;
+    }
+}
+
 - (BOOL)inferStreamingWithAudioPath:(NSString *)audioPath prompt:(NSString *)prompt completion:(ObjCTokenCallback)completion {
     LiteRTBridge *bridge = static_cast<LiteRTBridge *>(self.bridgePtr);
     if (!bridge || !self.isReady) {

@@ -46,6 +46,12 @@ typedef void (^ObjCTokenCallback)(NSString *_Nullable token, BOOL isComplete);
 /// - Returns: Complete model output string, or nil on failure.
 - (NSString *_Nullable)inferWithAudioPath:(NSString *)audioPath prompt:(NSString *)prompt;
 
+/// Performs blocking inference with image file input (multimodal).
+/// - Parameter imagePath: Absolute path to a JPEG/PNG image file on disk.
+/// - Parameter prompt: Text instruction.
+/// - Returns: Complete model output string, or nil on failure.
+- (NSString *_Nullable)inferWithImagePath:(NSString *)imagePath prompt:(NSString *)prompt;
+
 /// Performs streaming inference with audio file input (multimodal).
 /// - Parameter audioPath: Absolute path to a WAV audio file on disk.
 /// - Parameter prompt: Text instruction.

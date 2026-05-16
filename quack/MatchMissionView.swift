@@ -14,6 +14,9 @@ struct MatchMissionView: View {
     @State private var selected: String? = nil
     @State private var revealed = false
 
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    private var isLandscape: Bool { verticalSizeClass == .compact }
+
     private let rounds: [MatchRound]
 
     init(target: VocabItem, onComplete: @escaping (String) -> Void) {
@@ -41,6 +44,72 @@ struct MatchMissionView: View {
 
     private var round: MatchRound { rounds[min(roundIndex, rounds.count - 1)] }
 
+    private var promptCard: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 22)
+                .fill(Color.ink)
+                .grain(opacity: 0.1)
+
+            VStack(spacing: 4) {
+                Text(round.target.hanzi)
+                    .font(.display(56, weight: .heavy))
+                    .foregroundStyle(.white)
+                Text(revealed ? round.target.pinyin : "Match the character")
+                    .font(.bodyText(15, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.65))
+                    .animation(.easeOut, value: revealed)
+            }
+            .padding(24)
+        }
+        .frame(maxWidth: .infinity, minHeight: 130)
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+    }
+
+    private var choiceGrid: some View {
+        LazyVGrid(
+            columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+            spacing: 12
+        ) {
+            ForEach(round.choices) { choice in
+                MatchChoiceCell(
+                    vocab: choice,
+                    isTarget: choice.id == round.target.id,
+                    isSelected: selected == choice.id,
+                    revealed: revealed
+                ) {
+                    guard !revealed else { return }
+                    selected = choice.id
+                    withAnimation(.easeOut(duration: 0.3)) { revealed = true }
+                }
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 14)
+    }
+
+    @ViewBuilder
+    private var matchCTA: some View {
+        if revealed {
+            CTAButton(
+                label: roundIndex < rounds.count - 1 ? "Next" : "Finish",
+                variant: .ink,
+                action: {
+                    if roundIndex < rounds.count - 1 {
+                        roundIndex += 1
+                        selected = nil
+                        withAnimation { revealed = false }
+                    } else {
+                        onComplete(target.id)
+                    }
+                }
+            )
+            .padding(.horizontal, 24)
+            .padding(.bottom, 32)
+            .transition(.opacity.combined(with: .offset(y: 12)))
+        }
+    }
+
     var body: some View {
         ZStack {
             Color.cream.ignoresSafeArea()
@@ -48,67 +117,22 @@ struct MatchMissionView: View {
             VStack(spacing: 0) {
                 MissionHeader(title: "Match it", accent: .rose, onBack: { dismiss() })
 
-                // Prompt card
-                ZStack {
-                    RoundedRectangle(cornerRadius: 22)
-                        .fill(Color.ink)
-                        .grain(opacity: 0.1)
-
-                    VStack(spacing: 4) {
-                        Text(round.target.hanzi)
-                            .font(.display(56, weight: .heavy))
-                            .foregroundStyle(.white)
-                        Text(revealed ? round.target.pinyin : "Match the character")
-                            .font(.bodyText(15, weight: .bold))
-                            .foregroundStyle(.white.opacity(0.65))
-                            .animation(.easeOut, value: revealed)
-                    }
-                    .padding(24)
-                }
-                .frame(maxWidth: .infinity, minHeight: 130)
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-
-                // 2×2 grid
-                LazyVGrid(
-                    columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
-                    spacing: 12
-                ) {
-                    ForEach(round.choices) { choice in
-                        MatchChoiceCell(
-                            vocab: choice,
-                            isTarget: choice.id == round.target.id,
-                            isSelected: selected == choice.id,
-                            revealed: revealed
-                        ) {
-                            guard !revealed else { return }
-                            selected = choice.id
-                            withAnimation(.easeOut(duration: 0.3)) { revealed = true }
+                if isLandscape {
+                    HStack(spacing: 0) {
+                        promptCard
+                            .frame(maxWidth: .infinity)
+                        VStack(spacing: 0) {
+                            choiceGrid
+                            Spacer()
+                            matchCTA
                         }
+                        .frame(maxWidth: .infinity)
                     }
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 14)
-
-                Spacer()
-
-                if revealed {
-                    CTAButton(
-                        label: roundIndex < rounds.count - 1 ? "Next" : "Finish",
-                        variant: .ink,
-                        action: {
-                            if roundIndex < rounds.count - 1 {
-                                roundIndex += 1
-                                selected = nil
-                                withAnimation { revealed = false }
-                            } else {
-                                onComplete(target.id)
-                            }
-                        }
-                    )
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 32)
-                    .transition(.opacity.combined(with: .offset(y: 12)))
+                } else {
+                    promptCard
+                    choiceGrid
+                    Spacer()
+                    matchCTA
                 }
             }
         }

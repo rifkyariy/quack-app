@@ -94,8 +94,8 @@ final class CameraCapture: NSObject {
         previewRotationObservation = coordinator.observe(
             \.videoRotationAngleForHorizonLevelPreview,
             options: [.initial, .new]
-        ) { [weak self] coordinator, _ in
-            let angle = coordinator.videoRotationAngleForHorizonLevelPreview
+        ) { [weak self] _, change in
+            guard let angle = change.newValue else { return }
             Task { @MainActor in
                 self?.previewLayer.connection?.videoRotationAngle = angle
             }
@@ -116,6 +116,7 @@ final class CameraCapture: NSObject {
     func stop() {
         previewRotationObservation?.invalidate()
         previewRotationObservation = nil
+        rotationCoordinator = nil
         if let continuation = captureContinuation {
             captureContinuation = nil
             continuation.resume(throwing: CaptureError.captureFailed("Capture cancelled"))
@@ -139,6 +140,10 @@ final class CameraCapture: NSObject {
             self.photoOutput.capturePhoto(
                 with: AVCapturePhotoSettings(), delegate: self)
         }
+    }
+
+    deinit {
+        previewRotationObservation?.invalidate()
     }
 
     /// Downscales a UIImage so its longest side is at most `maxDimension`,
@@ -205,7 +210,6 @@ struct CameraPreview: UIViewRepresentable {
 
         func attach(_ layer: AVCaptureVideoPreviewLayer) {
             previewLayer = layer
-            layer.frame = bounds
             self.layer.addSublayer(layer)
         }
 

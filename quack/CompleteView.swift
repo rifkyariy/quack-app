@@ -57,6 +57,7 @@ struct CompleteView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 40)
             }
+            .scrollableWhenCompact()
         }
         .onAppear {
             for i in 0..<3 {

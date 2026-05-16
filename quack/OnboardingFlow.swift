@@ -92,6 +92,7 @@ struct SplashView: View {
 
                 Spacer().frame(height: 32)
             }
+            .scrollableWhenCompact()
         }
         .onAppear { visible = true }
     }
@@ -193,6 +194,7 @@ struct NameView: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
             }
+            .scrollableWhenCompact()
         }
         .onAppear { focused = true }
     }
@@ -354,6 +356,7 @@ struct AgeView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 28)
             }
+            .scrollableWhenCompact()
         }
     }
 }
@@ -436,6 +439,7 @@ struct IntroView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 32)
             }
+            .scrollableWhenCompact()
         }
     }
 }

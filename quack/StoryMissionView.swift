@@ -14,6 +14,8 @@ struct StoryMissionView: View {
     @State private var quizSelected: String? = nil
     @State private var quizRevealed = false
     @State private var quizChoicesCache: [VocabItem]? = nil
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    private var isLandscape: Bool { verticalSizeClass == .compact }
 
     enum StoryPhase: Equatable {
         case reading(page: Int)
@@ -61,126 +63,165 @@ struct StoryMissionView: View {
     // MARK: Reading
     private func readingView(page: Int) -> some View {
         let storyPage = pages[min(page, pages.count - 1)]
-        return VStack(spacing: 12) {
-            // Progress bars
-            HStack(spacing: 6) {
-                ForEach(0..<pages.count, id: \.self) { i in
-                    Capsule()
-                        .fill(i <= page ? Color.mint : Color.inkFaint)
-                        .frame(height: 4)
-                        .animation(.easeOut(duration: 0.3), value: page)
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
-
-            // Story card
-            ZStack {
-                RoundedRectangle(cornerRadius: 22)
-                    .fill(storyPage.vocab.tone.bg)
-                    .grain()
-                    .popShadow()
-
-                Sparkles(count: 4, opacity: 0.4)
-
-                VStack(spacing: 16) {
-                    ObjectArt(vocab: storyPage.vocab, size: 100)
-                    Text(storyPage.vocab.hanzi)
-                        .font(.display(36, weight: .heavy))
-                        .foregroundStyle(storyPage.vocab.tone.fg)
-                }
-                .padding(24)
-            }
-            .frame(maxWidth: .infinity, minHeight: 200)
-            .padding(.horizontal, 24)
-
-            // Narration card
-            ZStack {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.paper)
-                    .cardShadow()
-
-                HStack(spacing: 12) {
-                    Mascot(state: .speaking, size: 48)
-                    Text(storyPage.text)
-                        .font(.bodyText(14))
-                        .foregroundStyle(Color.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer()
-                    Button {} label: {
-                        QuackIcon(name: .speaker, size: 22, color: .quackOrange, strokeWidth: 2)
+        return Group {
+            if isLandscape {
+                HStack(spacing: 0) {
+                    storyCard(storyPage)
+                        .frame(maxWidth: .infinity)
+                    VStack(spacing: 12) {
+                        progressBars(page: page)
+                        narrationCard(storyPage)
                     }
-                    .buttonStyle(TapPress())
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(14)
+            } else {
+                VStack(spacing: 12) {
+                    progressBars(page: page)
+                    storyCard(storyPage)
+                    narrationCard(storyPage)
+                }
             }
-            .padding(.horizontal, 24)
         }
+    }
+
+    private func progressBars(page: Int) -> some View {
+        HStack(spacing: 6) {
+            ForEach(0..<pages.count, id: \.self) { i in
+                Capsule()
+                    .fill(i <= page ? Color.mint : Color.inkFaint)
+                    .frame(height: 4)
+                    .animation(.easeOut(duration: 0.3), value: page)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 8)
+    }
+
+    private func storyCard(_ storyPage: StoryPage) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 22)
+                .fill(storyPage.vocab.tone.bg)
+                .grain()
+                .popShadow()
+
+            Sparkles(count: 4, opacity: 0.4)
+
+            VStack(spacing: 16) {
+                ObjectArt(vocab: storyPage.vocab, size: 100)
+                Text(storyPage.vocab.hanzi)
+                    .font(.display(36, weight: .heavy))
+                    .foregroundStyle(storyPage.vocab.tone.fg)
+            }
+            .padding(24)
+        }
+        .frame(maxWidth: .infinity, minHeight: 200)
+        .padding(.horizontal, 24)
+    }
+
+    private func narrationCard(_ storyPage: StoryPage) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.paper)
+                .cardShadow()
+
+            HStack(spacing: 12) {
+                Mascot(state: .speaking, size: 48)
+                Text(storyPage.text)
+                    .font(.bodyText(14))
+                    .foregroundStyle(Color.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer()
+                Button {} label: {
+                    QuackIcon(name: .speaker, size: 22, color: .quackOrange, strokeWidth: 2)
+                }
+                .buttonStyle(TapPress())
+            }
+            .padding(14)
+        }
+        .padding(.horizontal, 24)
     }
 
     // MARK: Quiz
     private var quizView: some View {
-        let choices = quizChoicesCache ?? makeQuizChoices()
-        return VStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Eyebrow(text: "Quick quiz", flank: false, size: 11)
-                Text("Which one is '\(vocab.hanzi)'?")
-                    .font(.display(22, weight: .heavy))
-                    .foregroundStyle(Color.ink)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
-
-            VStack(spacing: 10) {
-                ForEach(choices) { choice in
-                    Button {
-                        guard !quizRevealed else { return }
-                        quizSelected = choice.id
-                        withAnimation(.easeOut(duration: 0.3)) { quizRevealed = true }
-                    } label: {
-                        HStack(spacing: 14) {
-                            ObjectArt(vocab: choice, size: 52)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(choice.en)
-                                    .font(.display(16, weight: .heavy))
-                                    .foregroundStyle(Color.ink)
-                                Text(choice.pinyin)
-                                    .font(.bodyText(12))
-                                    .foregroundStyle(Color.inkMuted)
-                            }
-                            Spacer()
-                            if quizRevealed && quizSelected == choice.id {
-                                Circle()
-                                    .fill(choice.id == vocab.id ? Color.mintDeep : Color.quackOrange)
-                                    .frame(width: 26, height: 26)
-                                    .overlay(
-                                        QuackIcon(
-                                            name: choice.id == vocab.id ? .check : .close,
-                                            size: 14, color: .white, strokeWidth: 2
-                                        )
-                                    )
-                            }
-                        }
-                        .padding(14)
+        Group {
+            if isLandscape {
+                HStack(spacing: 0) {
+                    quizPrompt
                         .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(quizRevealed && quizSelected == choice.id
-                                      ? (choice.id == vocab.id ? Color.mint.opacity(0.3) : Color.rose.opacity(0.3))
-                                      : Color.paper)
-                        )
-                        .cardShadow()
-                    }
-                    .buttonStyle(TapPress())
-                    .disabled(quizRevealed)
+                    quizChoices
+                        .frame(maxWidth: .infinity)
+                }
+            } else {
+                VStack(spacing: 16) {
+                    quizPrompt
+                    quizChoices
                 }
             }
-            .padding(.horizontal, 24)
         }
         .onAppear {
             if quizChoicesCache == nil { quizChoicesCache = makeQuizChoices() }
         }
+    }
+
+    private var quizPrompt: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Eyebrow(text: "Quick quiz", flank: false, size: 11)
+            Text("Which one is '\(vocab.hanzi)'?")
+                .font(.display(22, weight: .heavy))
+                .foregroundStyle(Color.ink)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 24)
+        .padding(.top, 8)
+    }
+
+    private var quizChoices: some View {
+        let choices = quizChoicesCache ?? makeQuizChoices()
+        return VStack(spacing: 10) {
+            ForEach(choices) { choice in
+                Button {
+                    guard !quizRevealed else { return }
+                    quizSelected = choice.id
+                    withAnimation(.easeOut(duration: 0.3)) { quizRevealed = true }
+                } label: {
+                    HStack(spacing: 14) {
+                        ObjectArt(vocab: choice, size: 52)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(choice.en)
+                                .font(.display(16, weight: .heavy))
+                                .foregroundStyle(Color.ink)
+                            Text(choice.pinyin)
+                                .font(.bodyText(12))
+                                .foregroundStyle(Color.inkMuted)
+                        }
+                        Spacer()
+                        if quizRevealed && quizSelected == choice.id {
+                            Circle()
+                                .fill(choice.id == vocab.id ? Color.mintDeep : Color.quackOrange)
+                                .frame(width: 26, height: 26)
+                                .overlay(
+                                    QuackIcon(
+                                        name: choice.id == vocab.id ? .check : .close,
+                                        size: 14, color: .white, strokeWidth: 2
+                                    )
+                                )
+                        }
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(quizRevealed && quizSelected == choice.id
+                                  ? (choice.id == vocab.id ? Color.mint.opacity(0.3) : Color.rose.opacity(0.3))
+                                  : Color.paper)
+                    )
+                    .cardShadow()
+                }
+                .buttonStyle(TapPress())
+                .disabled(quizRevealed)
+            }
+        }
+        .padding(.horizontal, 24)
     }
 
     // MARK: CTA

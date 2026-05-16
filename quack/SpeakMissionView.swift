@@ -17,6 +17,9 @@ struct SpeakMissionView: View {
     @State private var scoringTask: Task<Void, Never>?
     @State private var autoStopTask: Task<Void, Never>?
 
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    private var isLandscape: Bool { verticalSizeClass == .compact }
+
     private let maxRecordingSeconds: UInt64 = 4
 
     enum SpeakPhase { case idle, recording, scoring, result }
@@ -40,64 +43,85 @@ struct SpeakMissionView: View {
             VStack(spacing: 0) {
                 MissionHeader(title: "Say it", accent: .cobalt, onBack: { dismiss() })
 
-                // Word hero card
-                ZStack {
-                    RoundedRectangle(cornerRadius: 22)
-                        .fill(current.tone.bg)
-                        .grain()
-                        .popShadow()
-
-                    VStack(spacing: 8) {
-                        ObjectArt(vocab: current, size: 80)
-                        Text(current.hanzi)
-                            .font(.display(48, weight: .heavy))
-                            .foregroundStyle(current.tone.fg)
-                        Text(current.pinyin)
-                            .font(.bodyText(16, weight: .bold))
-                            .foregroundStyle(current.tone.fg.opacity(0.85))
-                        Text(current.en)
-                            .font(.bodyText(13))
-                            .foregroundStyle(current.tone.fg.opacity(0.7))
-                    }
-                    .padding(24)
-                }
-                .frame(maxWidth: .infinity, minHeight: 200)
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-
-                // Mic card
-                ZStack {
-                    RoundedRectangle(cornerRadius: 22)
-                        .fill(Color.paper)
-                        .cardShadow()
-
-                    micCardContent
-                }
-                .frame(maxWidth: .infinity, minHeight: 120)
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-
-                Spacer()
-
-                if phase == .result {
-                    HStack(spacing: 12) {
-                        if score < 70 {
-                            CTAButton(label: "Retry", variant: .ghost, action: retryWord)
+                if isLandscape {
+                    HStack(spacing: 0) {
+                        wordCard
+                            .frame(maxWidth: .infinity)
+                        VStack(spacing: 0) {
+                            micCard
+                            Spacer()
+                            resultCTAs
                         }
-                        CTAButton(
-                            label: wordIndex < words.count - 1 ? "Next" : "Finish",
-                            variant: .ink,
-                            action: nextWord
-                        )
+                        .frame(maxWidth: .infinity)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 32)
-                    .transition(.opacity.combined(with: .offset(y: 12)))
+                } else {
+                    wordCard
+                    micCard
+                    Spacer()
+                    resultCTAs
                 }
             }
         }
         .animation(.easeOut(duration: 0.25), value: phase)
         .onAppear { waveAnimating = true }
+    }
+
+    private var wordCard: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 22)
+                .fill(current.tone.bg)
+                .grain()
+                .popShadow()
+
+            VStack(spacing: 8) {
+                ObjectArt(vocab: current, size: 80)
+                Text(current.hanzi)
+                    .font(.display(48, weight: .heavy))
+                    .foregroundStyle(current.tone.fg)
+                Text(current.pinyin)
+                    .font(.bodyText(16, weight: .bold))
+                    .foregroundStyle(current.tone.fg.opacity(0.85))
+                Text(current.en)
+                    .font(.bodyText(13))
+                    .foregroundStyle(current.tone.fg.opacity(0.7))
+            }
+            .padding(24)
+        }
+        .frame(maxWidth: .infinity, minHeight: 200)
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+    }
+
+    private var micCard: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 22)
+                .fill(Color.paper)
+                .cardShadow()
+
+            micCardContent
+        }
+        .frame(maxWidth: .infinity, minHeight: 120)
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+    }
+
+    @ViewBuilder
+    private var resultCTAs: some View {
+        if phase == .result {
+            HStack(spacing: 12) {
+                if score < 70 {
+                    CTAButton(label: "Retry", variant: .ghost, action: retryWord)
+                }
+                CTAButton(
+                    label: wordIndex < words.count - 1 ? "Next" : "Finish",
+                    variant: .ink,
+                    action: nextWord
+                )
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 32)
+            .transition(.opacity.combined(with: .offset(y: 12)))
+        }
     }
 
     @ViewBuilder

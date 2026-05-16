@@ -6,11 +6,14 @@ struct CameraMissionView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var phase: CameraPhase = .scan
-    @State private var scanProgress: CGFloat = 0
-    @State private var showDetection = false
+    @State private var camera = CameraCapture()
+    @State private var cameraReady = false
+    @State private var errorMessage: String?
+    @State private var tryAgainMessage: String?
+    @State private var checkTask: Task<Void, Never>?
     @State private var waveAnimating = false
 
-    enum CameraPhase { case scan, word, listen }
+    enum CameraPhase { case scan, checking, word, listen }
 
     var body: some View {
         ZStack {
@@ -30,34 +33,35 @@ struct CameraMissionView: View {
                 .padding(.top, 12)
 
                 switch phase {
-                case .scan:   scanPhaseView
-                case .word:   wordPhaseView
-                case .listen: listenPhaseView
+                case .scan, .checking: scanPhaseView
+                case .word:            wordPhaseView
+                case .listen:          listenPhaseView
                 }
 
                 Spacer()
 
-                if phase != .listen {
+                if phase == .scan || phase == .checking {
                     CTAButton(
-                        label: phase == .scan ? "I found it!" : "Got it",
+                        label: phase == .checking ? "Looking..." : "I found it!",
                         variant: .ink,
-                        disabled: phase == .scan && !showDetection,
-                        action: advancePhase
+                        disabled: !cameraReady || phase == .checking,
+                        action: { captureAndCheck() }
                     )
                     .padding(.horizontal, 24)
                     .padding(.bottom, 32)
+                } else if phase == .word {
+                    CTAButton(label: "Got it", variant: .ink, action: advanceToListen)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 32)
                 }
             }
         }
-    }
-
-    private func advancePhase() {
-        withAnimation(.easeOut(duration: 0.3)) {
-            switch phase {
-            case .scan:   phase = .word
-            case .word:   phase = .listen
-            case .listen: break
-            }
+        .animation(.easeOut(duration: 0.25), value: phase)
+        .task { await prepareCamera() }
+        .onDisappear {
+            checkTask?.cancel()
+            camera.stop()
+            SpeechSpeaker.shared.stop()
         }
     }
 
@@ -68,54 +72,49 @@ struct CameraMissionView: View {
                 .fill(Color.ink)
                 .grain(opacity: 0.12)
 
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [.quackOrange.opacity(0), .quackOrange, .quackOrange.opacity(0)],
-                        startPoint: .leading, endPoint: .trailing
-                    )
-                )
-                .frame(height: 2)
-                .offset(y: scanProgress * 100 - 50)
+            if camera.isAvailable {
+                CameraPreview(session: camera.session)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+            } else {
+                // Simulator / no-camera fallback so the build still runs.
+                VStack(spacing: 8) {
+                    QuackIcon(name: .camera, size: 36, color: .white)
+                    Text("Camera unavailable here")
+                        .font(.bodyText(12, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+            }
 
             CameraCornerBrackets()
 
-            if showDetection {
-                VStack {
-                    HStack {
-                        HStack(spacing: 6) {
-                            Text(vocab.hanzi)
-                                .font(.display(14, weight: .heavy))
-                                .foregroundStyle(Color.ink)
-                            Text(vocab.pinyin)
-                                .font(.bodyText(11))
-                                .foregroundStyle(Color.inkMuted)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.paper)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .cardShadow()
-                        Spacer()
-                    }
-                    .padding(14)
-                    Spacer()
+            if phase == .checking {
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.ink.opacity(0.45))
+                VStack(spacing: 10) {
+                    ProgressView().tint(.white)
+                    Text("Looking...")
+                        .font(.bodyText(13, weight: .bold))
+                        .foregroundStyle(.white)
                 }
-                .transition(.opacity.combined(with: .scale(scale: 0.85, anchor: .topLeading)))
-
-                ObjectArt(vocab: vocab, size: 90)
-                    .transition(.opacity.combined(with: .scale(scale: 0.7)))
             }
         }
         .frame(maxWidth: .infinity, minHeight: 220)
         .padding(.horizontal, 24)
         .padding(.top, 12)
-        .onAppear {
-            withAnimation(.linear(duration: 1.6).repeatForever(autoreverses: true)) {
-                scanProgress = 1
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                withAnimation(.easeOut(duration: 0.5)) { showDetection = true }
+        .overlay(alignment: .bottom) {
+            if let message = errorMessage ?? tryAgainMessage {
+                Text(message)
+                    .font(.bodyText(12, weight: .bold))
+                    .foregroundStyle(Color.quackOrange)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.paper)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .cardShadow()
+                    .padding(.horizontal, 36)
+                    .padding(.bottom, 20)
+                    .transition(.opacity)
             }
         }
     }
@@ -137,7 +136,7 @@ struct CameraMissionView: View {
                     .font(.bodyText(16, weight: .bold))
                     .foregroundStyle(Color.inkMuted)
 
-                Button {} label: {
+                Button { SpeechSpeaker.shared.speak(vocab.hanzi) } label: {
                     HStack(spacing: 8) {
                         QuackIcon(name: .speaker, size: 20, color: .white)
                         Text("Hear it")
@@ -183,6 +182,57 @@ struct CameraMissionView: View {
         }
         .padding(.top, 48)
         .onAppear { waveAnimating = true }
+    }
+
+    // MARK: Actions
+
+    private func prepareCamera() async {
+        guard camera.isAvailable else { return }
+        let granted = await camera.requestPermission()
+        guard granted else {
+            errorMessage = "Quack needs the camera. Enable it in Settings."
+            return
+        }
+        do {
+            try camera.configure()
+            camera.start()
+            cameraReady = true
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func captureAndCheck() {
+        errorMessage = nil
+        tryAgainMessage = nil
+        phase = .checking
+        checkTask?.cancel()
+        checkTask = Task {
+            do {
+                let image = try await camera.capturePhoto()
+                let result = try await QuackGemma.shared.recognizeObject(
+                    image: image, target: vocab
+                )
+                guard !Task.isCancelled else { return }
+                if result.matched {
+                    camera.stop()
+                    withAnimation { phase = .word }
+                } else {
+                    let seen = result.recognized.isEmpty ? "something else" : result.recognized
+                    tryAgainMessage = "Hmm, I see \(seen). Point at the \(vocab.en.lowercased())!"
+                    withAnimation { phase = .scan }
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                errorMessage = error.localizedDescription
+                withAnimation { phase = .scan }
+            }
+        }
+    }
+
+    private func advanceToListen() {
+        SpeechSpeaker.shared.stop()
+        withAnimation { phase = .listen }
     }
 }
 

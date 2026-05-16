@@ -231,6 +231,23 @@ actor LiteRTRepository: InferenceRepository {
         return output
     }
 
+    /// Multimodal image inference with a custom prompt. Writes the image bytes
+    /// to a temp JPEG, sends the path through the bridge, and cleans up.
+    func inferImage(imageData: Data, prompt: String) async throws -> String {
+        guard let bridge = bridge, isInitialized else {
+            throw RepositoryError.notInitialized
+        }
+        let tempDir = NSTemporaryDirectory()
+        let fileName = "quack_image_\(UUID().uuidString).jpg"
+        let filePath = (tempDir as NSString).appendingPathComponent(fileName)
+        try imageData.write(to: URL(fileURLWithPath: filePath))
+        defer { try? FileManager.default.removeItem(atPath: filePath) }
+        guard let output = bridge.infer(withImagePath: filePath, prompt: prompt) else {
+            throw RepositoryError.inferenceFailed("No output from image inference")
+        }
+        return output
+    }
+
     /// Writes raw 16-bit PCM data as a WAV file and returns the file path.
     private func writeWAVFile(pcmData: Data, sampleRate: Int, channels: Int, bitsPerSample: Int) throws -> String {
         let tempDir = NSTemporaryDirectory()

@@ -86,7 +86,7 @@ bool LiteRTBridge::initialize(const std::string &modelPath) {
       // when the engine config changes (e.g. audio modality enabled).
       NSString *markerFile = [cacheDir stringByAppendingPathComponent:@".vision_cache_v1"];
       if (![[NSFileManager defaultManager] fileExistsAtPath:markerFile]) {
-        std::cout << "Clearing stale Metal shader cache for audio-enabled config" << std::endl;
+        std::cout << "Clearing stale Metal shader cache for vision-enabled config" << std::endl;
         [[NSFileManager defaultManager] removeItemAtPath:cacheDir error:nil];
       }
 

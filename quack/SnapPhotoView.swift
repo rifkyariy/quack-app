@@ -6,6 +6,8 @@ struct SnapPhotoView: View {
     @State private var resultWords: [VocabItem] = []
     @State private var selectedId: String? = nil
     @State private var dotScale = [false, false, false]
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    private var isLandscape: Bool { verticalSizeClass == .compact }
 
     enum SnapPhase { case compose, analyzing, result }
 
@@ -23,10 +25,14 @@ struct SnapPhotoView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 8)
 
-                switch phase {
-                case .compose:   composePhaseView
-                case .analyzing: analyzingPhaseView
-                case .result:    resultPhaseView
+                if isLandscape {
+                    landscapePhaseContent
+                } else {
+                    switch phase {
+                    case .compose:   composePhaseView
+                    case .analyzing: analyzingPhaseView
+                    case .result:    resultPhaseView
+                    }
                 }
 
                 Spacer()
@@ -54,68 +60,79 @@ struct SnapPhotoView: View {
     }
 
     // MARK: - Compose phase
+    private var composeTitle: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Eyebrow(text: "Point Q's camera at anything", flank: false, size: 11)
+            Text("What do you see?")
+                .font(.display(24, weight: .heavy))
+                .foregroundStyle(Color.ink)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 24)
+    }
+
+    private var composeCameraPanel: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.ink)
+                .grain(opacity: 0.12)
+
+            SnapCornerBrackets()
+
+            Mascot(state: .idle, size: 80)
+                .opacity(0.3)
+        }
+        .frame(maxWidth: .infinity, minHeight: 300)
+        .padding(.horizontal, 24)
+    }
+
     private var composePhaseView: some View {
         VStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Eyebrow(text: "Point Q's camera at anything", flank: false, size: 11)
-                Text("What do you see?")
-                    .font(.display(24, weight: .heavy))
-                    .foregroundStyle(Color.ink)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 24)
-
-            ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.ink)
-                    .grain(opacity: 0.12)
-
-                SnapCornerBrackets()
-
-                Mascot(state: .idle, size: 80)
-                    .opacity(0.3)
-            }
-            .frame(maxWidth: .infinity, minHeight: 300)
-            .padding(.horizontal, 24)
+            composeTitle
+            composeCameraPanel
         }
         .padding(.top, 8)
     }
 
     // MARK: - Analyzing phase
+    private var analyzingPanel: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.ink)
+                .grain(opacity: 0.12)
+
+            SnapCornerBrackets()
+
+            VStack(spacing: 20) {
+                Mascot(state: .speaking, size: 80)
+
+                HStack(spacing: 10) {
+                    ForEach(0..<3, id: \.self) { i in
+                        Circle()
+                            .fill(Color.quackOrange)
+                            .frame(width: 12, height: 12)
+                            .scaleEffect(dotScale[i] ? 1.4 : 0.8)
+                            .animation(
+                                .easeInOut(duration: 0.5)
+                                    .repeatForever(autoreverses: true)
+                                    .delay(Double(i) * 0.18),
+                                value: dotScale[i]
+                            )
+                    }
+                }
+
+                Text("Q is looking...")
+                    .font(.display(16, weight: .heavy))
+                    .foregroundStyle(Color.cream)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 300)
+        .padding(.horizontal, 24)
+    }
+
     private var analyzingPhaseView: some View {
         VStack(spacing: 28) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.ink)
-                    .grain(opacity: 0.12)
-
-                SnapCornerBrackets()
-
-                VStack(spacing: 20) {
-                    Mascot(state: .speaking, size: 80)
-
-                    HStack(spacing: 10) {
-                        ForEach(0..<3, id: \.self) { i in
-                            Circle()
-                                .fill(Color.quackOrange)
-                                .frame(width: 12, height: 12)
-                                .scaleEffect(dotScale[i] ? 1.4 : 0.8)
-                                .animation(
-                                    .easeInOut(duration: 0.5)
-                                        .repeatForever(autoreverses: true)
-                                        .delay(Double(i) * 0.18),
-                                    value: dotScale[i]
-                                )
-                        }
-                    }
-
-                    Text("Q is looking...")
-                        .font(.display(16, weight: .heavy))
-                        .foregroundStyle(Color.cream)
-                }
-            }
-            .frame(maxWidth: .infinity, minHeight: 300)
-            .padding(.horizontal, 24)
+            analyzingPanel
         }
         .padding(.top, 8)
         .onAppear {
@@ -128,68 +145,108 @@ struct SnapPhotoView: View {
     }
 
     // MARK: - Result phase
-    private var resultPhaseView: some View {
-        VStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Eyebrow(text: "Q found these words!", flank: false, size: 11)
-                Text("Pick one to learn")
-                    .font(.display(24, weight: .heavy))
-                    .foregroundStyle(Color.ink)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 24)
+    private var resultTitle: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Eyebrow(text: "Q found these words!", flank: false, size: 11)
+            Text("Pick one to learn")
+                .font(.display(24, weight: .heavy))
+                .foregroundStyle(Color.ink)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 24)
+    }
 
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: 12),
-                    GridItem(.flexible(), spacing: 12)
-                ],
-                spacing: 12
-            ) {
-                ForEach(resultWords) { word in
-                    Button { selectedId = word.id } label: {
-                        ZStack(alignment: .topTrailing) {
-                            VStack(spacing: 8) {
-                                ObjectArt(vocab: word, size: 60)
-                                Text(word.hanzi)
-                                    .font(.display(20, weight: .heavy))
-                                    .foregroundStyle(Color.ink)
-                                Text(word.en)
-                                    .font(.bodyText(12))
-                                    .foregroundStyle(Color.inkMuted)
-                            }
-                            .padding(14)
-                            .frame(maxWidth: .infinity)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color.cream)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(
-                                                selectedId == word.id ? Color.quackOrange : Color.clear,
-                                                lineWidth: 3
-                                            )
-                                    )
-                            )
-                            .cardShadow()
+    private var resultGrid: some View {
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ],
+            spacing: 12
+        ) {
+            ForEach(resultWords) { word in
+                Button { selectedId = word.id } label: {
+                    ZStack(alignment: .topTrailing) {
+                        VStack(spacing: 8) {
+                            ObjectArt(vocab: word, size: 60)
+                            Text(word.hanzi)
+                                .font(.display(20, weight: .heavy))
+                                .foregroundStyle(Color.ink)
+                            Text(word.en)
+                                .font(.bodyText(12))
+                                .foregroundStyle(Color.inkMuted)
+                        }
+                        .padding(14)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.cream)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(
+                                            selectedId == word.id ? Color.quackOrange : Color.clear,
+                                            lineWidth: 3
+                                        )
+                                )
+                        )
+                        .cardShadow()
 
-                            if selectedId == word.id {
-                                Circle()
-                                    .fill(Color.quackOrange)
-                                    .frame(width: 24, height: 24)
-                                    .overlay(
-                                        QuackIcon(name: .check, size: 13, color: .white, strokeWidth: 2)
-                                    )
-                                    .padding(8)
-                            }
+                        if selectedId == word.id {
+                            Circle()
+                                .fill(Color.quackOrange)
+                                .frame(width: 24, height: 24)
+                                .overlay(
+                                    QuackIcon(name: .check, size: 13, color: .white, strokeWidth: 2)
+                                )
+                                .padding(8)
                         }
                     }
-                    .buttonStyle(.plain)
                 }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 24)
+        }
+        .padding(.horizontal, 24)
+    }
+
+    private var resultPhaseView: some View {
+        VStack(spacing: 16) {
+            resultTitle
+            resultGrid
         }
         .padding(.top, 8)
+    }
+
+    // MARK: - Landscape phase content
+    @ViewBuilder
+    private var landscapePhaseContent: some View {
+        switch phase {
+        case .compose:
+            HStack(alignment: .center, spacing: 0) {
+                composeCameraPanel.frame(maxWidth: .infinity)
+                VStack { composeTitle; Spacer() }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 8)
+            }
+            .padding(.top, 8)
+        case .analyzing:
+            analyzingPanel
+                .padding(.top, 8)
+                .onAppear {
+                    for i in 0..<3 { dotScale[i] = true }
+                    Task {
+                        try? await Task.sleep(nanoseconds: 1_500_000_000)
+                        withAnimation { phase = .result }
+                    }
+                }
+        case .result:
+            HStack(alignment: .top, spacing: 0) {
+                VStack { resultTitle; Spacer() }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 8)
+                resultGrid.frame(maxWidth: .infinity)
+            }
+            .padding(.top, 8)
+        }
     }
 }
 

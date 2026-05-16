@@ -13,6 +13,9 @@ struct CameraMissionView: View {
     @State private var checkTask: Task<Void, Never>?
     @State private var waveAnimating = false
 
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    private var isLandscape: Bool { verticalSizeClass == .compact }
+
     enum CameraPhase { case scan, checking, word, listen }
 
     var body: some View {
@@ -22,37 +25,35 @@ struct CameraMissionView: View {
             VStack(spacing: 0) {
                 MissionHeader(title: "Scan it", onBack: { dismiss() })
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Eyebrow(text: "Camera mission", flank: false, size: 11)
-                    Text("Find the \(vocab.en.lowercased())")
-                        .font(.display(24, weight: .heavy))
-                        .foregroundStyle(Color.ink)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
+                if isLandscape && (phase == .scan || phase == .checking) {
+                    HStack(spacing: 0) {
+                        scanPhaseView
+                            .frame(maxWidth: .infinity)
+                        VStack(spacing: 0) {
+                            titleBlock
+                            Spacer()
+                            scanCTA
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                } else {
+                    titleBlock
 
-                switch phase {
-                case .scan, .checking: scanPhaseView
-                case .word:            wordPhaseView
-                case .listen:          listenPhaseView
-                }
+                    switch phase {
+                    case .scan, .checking: scanPhaseView
+                    case .word:            wordPhaseView
+                    case .listen:          listenPhaseView
+                    }
 
-                Spacer()
+                    Spacer()
 
-                if phase == .scan || phase == .checking {
-                    CTAButton(
-                        label: phase == .checking ? "Looking..." : "I found it!",
-                        variant: .ink,
-                        disabled: !cameraReady || phase == .checking,
-                        action: { captureAndCheck() }
-                    )
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 32)
-                } else if phase == .word {
-                    CTAButton(label: "Got it", variant: .ink, action: advanceToListen)
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 32)
+                    if phase == .scan || phase == .checking {
+                        scanCTA
+                    } else if phase == .word {
+                        CTAButton(label: "Got it", variant: .ink, action: advanceToListen)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 32)
+                    }
                 }
             }
         }
@@ -63,6 +64,29 @@ struct CameraMissionView: View {
             camera.stop()
             SpeechSpeaker.shared.stop()
         }
+    }
+
+    private var titleBlock: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Eyebrow(text: "Camera mission", flank: false, size: 11)
+            Text("Find the \(vocab.en.lowercased())")
+                .font(.display(24, weight: .heavy))
+                .foregroundStyle(Color.ink)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+    }
+
+    private var scanCTA: some View {
+        CTAButton(
+            label: phase == .checking ? "Looking..." : "I found it!",
+            variant: .ink,
+            disabled: !cameraReady || phase == .checking,
+            action: { captureAndCheck() }
+        )
+        .padding(.horizontal, 24)
+        .padding(.bottom, 32)
     }
 
     // MARK: Scan phase

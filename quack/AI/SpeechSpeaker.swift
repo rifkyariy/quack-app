@@ -17,12 +17,28 @@ final class SpeechSpeaker {
         if synthesizer.isSpeaking {
             synthesizer.stopSpeaking(at: .immediate)
         }
-        // MicRecorder owns audio-session category (playAndRecord). Don't
-        // override it here — that would break the next recording.
+        activatePlaybackSessionIfNeeded()
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = voice
         utterance.rate = rate
         synthesizer.speak(utterance)
+    }
+
+    /// Ensures the audio session can actually play speech. When a recording
+    /// flow owns the session, MicRecorder has set `.playAndRecord` (with
+    /// `.defaultToSpeaker`) — that is already audible and ignores the
+    /// Ring/Silent switch, so leave it untouched to avoid breaking recording.
+    /// Otherwise — e.g. the Camera Mission, which never records — the session
+    /// is still the default `.soloAmbient`, which the Ring/Silent switch
+    /// mutes. Switch to `.playback` so the duck's pronunciation is audible
+    /// even when the device is on silent.
+    private func activatePlaybackSessionIfNeeded() {
+        let session = AVAudioSession.sharedInstance()
+        guard session.category != .playAndRecord, session.category != .record else {
+            return
+        }
+        try? session.setCategory(.playback, mode: .spokenAudio)
+        try? session.setActive(true)
     }
 
     /// Stops any in-flight utterance immediately.

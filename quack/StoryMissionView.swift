@@ -236,6 +236,7 @@ struct StoryMissionView: View {
                     if page < pages.count - 1 {
                         withAnimation { phase = .reading(page: page + 1) }
                     } else {
+                        if quizChoicesCache == nil { quizChoicesCache = makeQuizChoices() }
                         withAnimation { phase = .quiz }
                     }
                 }

@@ -112,27 +112,36 @@ final class QuackGemma {
     }
 
     /// Decides whether Gemma's recognized object name matches the target
-    /// English word. Lenient on purpose — kids' framing tolerates "a cat" or
-    /// "grapes" for "grape". Returns false when the model signaled "none".
+    /// English word. Compares word-by-word: normalize() drops spaces, so a
+    /// substring test on the whole phrase would falsely match "egg" inside
+    /// "eggplant" — splitting on whitespace first keeps word boundaries
+    /// intact. Lenient within a word (tolerates "a cat", "grapes" for
+    /// "grape"). Returns false when the model signaled it could not tell.
     static func objectMatches(recognized rawRecognized: String, target rawTarget: String) -> Bool {
-        let recognized = normalize(rawRecognized)
         let target = normalize(rawTarget)
-        if recognized.isEmpty || recognized == "none" || recognized.contains("none") {
+        guard !target.isEmpty else { return false }
+        // Reject explicit uncertainty before tokenizing.
+        let lowerRaw = rawRecognized.lowercased()
+        if lowerRaw.contains("none") || lowerRaw.contains("unknown")
+            || lowerRaw.contains("not sure") || lowerRaw.contains("unclear") {
             return false
         }
-        guard !target.isEmpty else { return false }
-        // normalize() strips to a–z and drops spaces, so "a cat" -> "acat";
-        // containment in either direction catches articles, plurals, and
-        // compound answers ("red apple").
-        if recognized.contains(target) || target.contains(recognized) {
-            return true
+        let tokens = rawRecognized
+            .split(whereSeparator: { $0.isWhitespace })
+            .map { normalize(String($0)) }
+            .filter { !$0.isEmpty }
+        guard !tokens.isEmpty else { return false }
+        for token in tokens {
+            if token == target { return true }
+            // Fuzzy match within a word tolerates plurals and near-miss
+            // spellings ("grape"/"grapes"), but not unrelated compounds.
+            let distance = levenshtein(token, target)
+            let maxLen = max(token.count, target.count)
+            if maxLen > 0, 1.0 - Double(distance) / Double(maxLen) >= 0.8 {
+                return true
+            }
         }
-        // Fuzzy fallback tolerates a near-miss spelling of the same word.
-        let distance = levenshtein(recognized, target)
-        let maxLen = max(recognized.count, target.count)
-        guard maxLen > 0 else { return false }
-        let similarity = 1.0 - Double(distance) / Double(maxLen)
-        return similarity >= 0.8
+        return false
     }
 
     /// Computes a 0–100 score from a heard pinyin transcription against the

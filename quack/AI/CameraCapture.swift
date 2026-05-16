@@ -48,11 +48,14 @@ final class CameraCapture: NSObject {
         }
     }
 
-    /// Wires up the back camera and photo output. Safe to call repeatedly.
+    /// Wires up the front camera and photo output. Safe to call repeatedly.
     func configure() throws {
         guard !configured else { return }
+        // Front camera: the kid holds objects up to the selfie camera. iOS's
+        // default selfie behaviour (mirrored preview, true-scene capture) is
+        // left as-is — horizontal mirroring does not affect object recognition.
         guard let device = AVCaptureDevice.default(
-            .builtInWideAngleCamera, for: .video, position: .back)
+            .builtInWideAngleCamera, for: .video, position: .front)
             ?? AVCaptureDevice.default(for: .video)
         else {
             throw CaptureError.unavailable

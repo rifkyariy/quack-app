@@ -57,6 +57,13 @@ public:
   std::string inferWithAudio(const std::string &audioFilePath,
                              const std::string &textPrompt);
 
+  /// Performs blocking inference with image input (multimodal).
+  /// - Parameter imageFilePath: Path to a JPEG/PNG image file on disk.
+  /// - Parameter textPrompt: Text instruction.
+  /// - Returns: Complete model output string, or empty on error.
+  std::string inferWithImage(const std::string &imageFilePath,
+                             const std::string &textPrompt);
+
   /// Releases resources and cleans up the model.
   void shutdown();
 

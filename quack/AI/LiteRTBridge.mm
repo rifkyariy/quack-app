@@ -66,7 +66,7 @@ bool LiteRTBridge::initialize(const std::string &modelPath) {
     // Audio encoder and adapter are CPU-constrained by the model itself.
     auto engine_settings_or = EngineSettings::CreateDefault(
         std::move(*model_assets_or), Backend::CPU,
-        /*vision_backend=*/std::nullopt,
+        /*vision_backend=*/Backend::CPU,
         /*audio_backend=*/Backend::CPU);
     if (!engine_settings_or.ok()) {
       std::cerr << "EngineSettings::CreateDefault failed: "
@@ -84,7 +84,7 @@ bool LiteRTBridge::initialize(const std::string &modelPath) {
       // Clear stale Metal shader cache from previous (text-only) sessions.
       // The mldrift cache is configuration-dependent and must be rebuilt
       // when the engine config changes (e.g. audio modality enabled).
-      NSString *markerFile = [cacheDir stringByAppendingPathComponent:@".audio_cache_v1"];
+      NSString *markerFile = [cacheDir stringByAppendingPathComponent:@".vision_cache_v1"];
       if (![[NSFileManager defaultManager] fileExistsAtPath:markerFile]) {
         std::cout << "Clearing stale Metal shader cache for audio-enabled config" << std::endl;
         [[NSFileManager defaultManager] removeItemAtPath:cacheDir error:nil];
@@ -104,6 +104,10 @@ bool LiteRTBridge::initialize(const std::string &modelPath) {
       if (engine_settings_or->GetAudioExecutorSettings().has_value()) {
         engine_settings_or->GetMutableAudioExecutorSettings()->SetCacheDir(cacheDirStr);
       }
+      // Also set cache dir for the vision executor (CPU-based vision encoder).
+      if (engine_settings_or->GetVisionExecutorSettings().has_value()) {
+        engine_settings_or->GetMutableVisionExecutorSettings()->SetCacheDir(cacheDirStr);
+      }
       std::cout << "Cache directory set to: " << cacheDirStr << std::endl;
     }
 
@@ -118,9 +122,10 @@ bool LiteRTBridge::initialize(const std::string &modelPath) {
     impl_->engine = std::move(*engine_or);
     std::cout << "Engine created successfully" << std::endl;
 
-    // 4. Create ConversationConfig with audio modality enabled
+    // 4. Create ConversationConfig with audio + vision modalities enabled
     auto session_config = SessionConfig::CreateDefault();
     session_config.SetAudioModalityEnabled(true);
+    session_config.SetVisionModalityEnabled(true);
 
     auto config_or = ConversationConfig::Builder()
         .SetSessionConfig(session_config)
@@ -130,7 +135,7 @@ bool LiteRTBridge::initialize(const std::string &modelPath) {
                 << config_or.status().message() << std::endl;
       return false;
     }
-    std::cout << "ConversationConfig created successfully (audio enabled)"
+    std::cout << "ConversationConfig created successfully (audio + vision enabled)"
               << std::endl;
 
     // 5. Create Conversation
@@ -254,6 +259,60 @@ std::string LiteRTBridge::inferWithAudio(const std::string &audioFilePath,
     return output;
   } catch (const std::exception &e) {
     std::cerr << "Audio inference exception: " << e.what() << std::endl;
+    return "";
+  }
+}
+
+std::string LiteRTBridge::inferWithImage(const std::string &imageFilePath,
+                                         const std::string &textPrompt) {
+  if (!impl_ || !impl_->is_ready || !impl_->conversation) {
+    return "";
+  }
+
+  try {
+    // Build multimodal message with image file path and text instruction.
+    json content = json::array();
+    content.push_back({{"type", "image"}, {"path", imageFilePath}});
+    content.push_back({{"type", "text"}, {"text", textPrompt}});
+
+    json message = {
+      {"role", "user"},
+      {"content", content}
+    };
+
+    std::cout << "Sending image message to LiteRT-LM (image: "
+              << imageFilePath << ")" << std::endl;
+
+    auto result_or = impl_->conversation->SendMessage(message);
+    if (!result_or.ok()) {
+      std::cerr << "SendMessage (image) failed: "
+                << result_or.status().message() << std::endl;
+      return "";
+    }
+
+    const json& response = *result_or;
+    std::string output;
+    if (response.contains("content")) {
+      if (response["content"].is_string()) {
+        output = response["content"].get<std::string>();
+      } else if (response["content"].is_array()) {
+        for (const auto& item : response["content"]) {
+          if (item.contains("text")) {
+            output += item["text"].get<std::string>();
+          }
+        }
+      } else {
+        output = response["content"].dump();
+      }
+    } else {
+      output = response.dump();
+    }
+
+    std::cout << "LiteRT-LM image response received (" << output.size()
+              << " chars)" << std::endl;
+    return output;
+  } catch (const std::exception &e) {
+    std::cerr << "Image inference exception: " << e.what() << std::endl;
     return "";
   }
 }

@@ -315,7 +315,7 @@ struct AgeView: View {
                             }
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
-                            .gesture(
+                            .simultaneousGesture(
                                 DragGesture()
                                     .updating($dragOffset) { val, state, _ in
                                         state = val.translation.width

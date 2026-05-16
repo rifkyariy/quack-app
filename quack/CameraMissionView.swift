@@ -73,7 +73,7 @@ struct CameraMissionView: View {
                 .grain(opacity: 0.12)
 
             if camera.isAvailable {
-                CameraPreview(session: camera.session)
+                CameraPreview(previewLayer: camera.previewLayer)
                     .clipShape(RoundedRectangle(cornerRadius: 20))
             } else {
                 // Simulator / no-camera fallback so the build still runs.

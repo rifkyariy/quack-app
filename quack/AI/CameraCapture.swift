@@ -31,6 +31,12 @@ final class CameraCapture: NSObject {
     private var captureContinuation: CheckedContinuation<Data, Error>?
     private let sessionQueue = DispatchQueue(label: "dev.quack.camera.session")
 
+    /// The preview layer the SwiftUI `CameraPreview` displays. Owned here so a
+    /// RotationCoordinator can keep it upright.
+    let previewLayer = AVCaptureVideoPreviewLayer()
+    private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
+    private var previewRotationObservation: NSKeyValueObservation?
+
     /// True when this device actually has a usable camera (false in Simulator).
     var isAvailable: Bool {
         AVCaptureDevice.default(for: .video) != nil
@@ -76,6 +82,24 @@ final class CameraCapture: NSObject {
         session.addInput(input)
         session.addOutput(photoOutput)
         session.commitConfiguration()
+        previewLayer.session = session
+        previewLayer.videoGravity = .resizeAspectFill
+
+        // RotationCoordinator keeps preview + capture level with the horizon
+        // regardless of device orientation. Without it a rotated phone yields
+        // a sideways preview and a sideways JPEG (which Gemma then misreads).
+        let coordinator = AVCaptureDevice.RotationCoordinator(
+            device: device, previewLayer: previewLayer)
+        rotationCoordinator = coordinator
+        previewRotationObservation = coordinator.observe(
+            \.videoRotationAngleForHorizonLevelPreview,
+            options: [.initial, .new]
+        ) { [weak self] coordinator, _ in
+            let angle = coordinator.videoRotationAngleForHorizonLevelPreview
+            Task { @MainActor in
+                self?.previewLayer.connection?.videoRotationAngle = angle
+            }
+        }
         configured = true
     }
 
@@ -90,6 +114,8 @@ final class CameraCapture: NSObject {
     /// first — stopRunning may otherwise drop the delegate callback, leaking
     /// the continuation and hanging its awaiting task.
     func stop() {
+        previewRotationObservation?.invalidate()
+        previewRotationObservation = nil
         if let continuation = captureContinuation {
             captureContinuation = nil
             continuation.resume(throwing: CaptureError.captureFailed("Capture cancelled"))
@@ -106,6 +132,10 @@ final class CameraCapture: NSObject {
         }
         return try await withCheckedThrowingContinuation { continuation in
             self.captureContinuation = continuation
+            if let angle = self.rotationCoordinator?.videoRotationAngleForHorizonLevelCapture,
+               let connection = self.photoOutput.connection(with: .video) {
+                connection.videoRotationAngle = angle
+            }
             self.photoOutput.capturePhoto(
                 with: AVCapturePhotoSettings(), delegate: self)
         }
@@ -155,23 +185,33 @@ extension CameraCapture: AVCapturePhotoCaptureDelegate {
     }
 }
 
-/// SwiftUI live-camera preview backed by an AVCaptureVideoPreviewLayer.
+/// SwiftUI host for a `CameraCapture`-owned `AVCaptureVideoPreviewLayer`.
 struct CameraPreview: UIViewRepresentable {
-    let session: AVCaptureSession
+    let previewLayer: AVCaptureVideoPreviewLayer
 
-    func makeUIView(context: Context) -> PreviewView {
-        let view = PreviewView()
-        view.videoPreviewLayer.session = session
-        view.videoPreviewLayer.videoGravity = .resizeAspectFill
+    func makeUIView(context: Context) -> PreviewHostView {
+        let view = PreviewHostView()
+        view.attach(previewLayer)
         return view
     }
 
-    func updateUIView(_ uiView: PreviewView, context: Context) {}
+    func updateUIView(_ uiView: PreviewHostView, context: Context) {}
 
-    final class PreviewView: UIView {
-        override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
-        var videoPreviewLayer: AVCaptureVideoPreviewLayer {
-            layer as! AVCaptureVideoPreviewLayer
+    /// Plain UIView that keeps the externally-owned preview layer sized to its
+    /// bounds. (The layer cannot be the view's backing `layerClass` because it
+    /// is owned by `CameraCapture`, not the view.)
+    final class PreviewHostView: UIView {
+        private weak var previewLayer: AVCaptureVideoPreviewLayer?
+
+        func attach(_ layer: AVCaptureVideoPreviewLayer) {
+            previewLayer = layer
+            layer.frame = bounds
+            self.layer.addSublayer(layer)
+        }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            previewLayer?.frame = bounds
         }
     }
 }

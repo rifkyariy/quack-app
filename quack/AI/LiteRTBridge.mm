@@ -153,6 +153,8 @@ bool LiteRTBridge::resetConversation() {
     if (!config_or.ok()) {
       std::cerr << "ConversationConfig::Build failed: "
                 << config_or.status().message() << std::endl;
+      impl_->conversation.reset();
+      impl_->is_ready = false;
       return false;
     }
 
@@ -162,6 +164,8 @@ bool LiteRTBridge::resetConversation() {
     if (!conversation_or.ok()) {
       std::cerr << "Conversation::Create failed: "
                 << conversation_or.status().message() << std::endl;
+      impl_->conversation.reset();
+      impl_->is_ready = false;
       return false;
     }
     impl_->conversation = std::move(*conversation_or);
@@ -169,6 +173,8 @@ bool LiteRTBridge::resetConversation() {
     return true;
   } catch (const std::exception &e) {
     std::cerr << "resetConversation exception: " << e.what() << std::endl;
+    impl_->conversation.reset();
+    impl_->is_ready = false;
     return false;
   }
 }

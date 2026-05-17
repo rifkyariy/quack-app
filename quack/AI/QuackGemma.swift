@@ -67,6 +67,9 @@ final class QuackGemma {
     /// it heard, Swift computes similarity.
     func scorePronunciation(audio: Data, target: VocabItem) async throws -> PronunciationResult {
         try await ensureReady()
+        // Discard any prior mission's turn history so this scoring runs on a
+        // clean context (the LiteRT-LM Conversation is shared across missions).
+        try await repo.resetConversation()
         // Do NOT include the target word — small models (Gemma E2B) will
         // regurgitate the reference instead of transcribing what they heard.
         let prompt = """
@@ -97,6 +100,9 @@ final class QuackGemma {
     /// toward agreement (same reason scorePronunciation hides the target).
     func recognizeObject(image: Data, target: VocabItem) async throws -> VisionResult {
         try await ensureReady()
+        // Discard any prior mission's turn history so this recognition runs on
+        // a clean context (the LiteRT-LM Conversation is shared across missions).
+        try await repo.resetConversation()
         let prompt = """
         Look at this photo. What is the main object in it? \
         Answer with just one or two words in English, all lowercase, no \

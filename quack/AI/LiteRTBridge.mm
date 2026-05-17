@@ -158,7 +158,10 @@ bool LiteRTBridge::resetConversation() {
       return false;
     }
 
-    // 5. Create Conversation
+    // 5. Create Conversation. The Engine supports only one session at a
+    //    time, so the previous Conversation (which owns the live session)
+    //    must be released before Conversation::Create can succeed.
+    impl_->conversation.reset();
     auto conversation_or = Conversation::Create(
         *impl_->engine, *config_or);
     if (!conversation_or.ok()) {

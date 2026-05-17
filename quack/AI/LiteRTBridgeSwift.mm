@@ -154,6 +154,19 @@
     }
 }
 
+- (BOOL)resetConversation {
+    LiteRTBridge *bridge = static_cast<LiteRTBridge *>(self.bridgePtr);
+    if (!bridge || !self.isReady) {
+        return NO;
+    }
+    try {
+        return bridge->resetConversation() ? YES : NO;
+    } catch (const std::exception& e) {
+        NSLog(@"resetConversation failed: %s", e.what());
+        return NO;
+    }
+}
+
 - (BOOL)isReady {
     LiteRTBridge *bridge = static_cast<LiteRTBridge *>(self.bridgePtr);
     return bridge && bridge->isReady();

@@ -122,6 +122,26 @@ bool LiteRTBridge::initialize(const std::string &modelPath) {
     impl_->engine = std::move(*engine_or);
     std::cout << "Engine created successfully" << std::endl;
 
+    // 4-5. Build the ConversationConfig + Conversation.
+    if (!resetConversation()) {
+      std::cerr << "Initial conversation build failed" << std::endl;
+      return false;
+    }
+
+    impl_->is_ready = true;
+    std::cout << "LiteRT-LM initialized successfully" << std::endl;
+    return true;
+  } catch (const std::exception &e) {
+    std::cerr << "Initialization exception: " << e.what() << std::endl;
+    impl_->is_ready = false;
+    return false;
+  }
+}
+
+bool LiteRTBridge::resetConversation() {
+  if (!impl_ || !impl_->engine) return false;
+
+  try {
     // 4. Create ConversationConfig with audio + vision modalities enabled
     auto session_config = SessionConfig::CreateDefault();
     session_config.SetAudioModalityEnabled(true);
@@ -135,8 +155,6 @@ bool LiteRTBridge::initialize(const std::string &modelPath) {
                 << config_or.status().message() << std::endl;
       return false;
     }
-    std::cout << "ConversationConfig created successfully (audio + vision enabled)"
-              << std::endl;
 
     // 5. Create Conversation
     auto conversation_or = Conversation::Create(
@@ -147,14 +165,10 @@ bool LiteRTBridge::initialize(const std::string &modelPath) {
       return false;
     }
     impl_->conversation = std::move(*conversation_or);
-    std::cout << "Conversation created successfully" << std::endl;
-
-    impl_->is_ready = true;
-    std::cout << "LiteRT-LM initialized successfully" << std::endl;
+    std::cout << "Conversation reset (fresh context)" << std::endl;
     return true;
   } catch (const std::exception &e) {
-    std::cerr << "Initialization exception: " << e.what() << std::endl;
-    impl_->is_ready = false;
+    std::cerr << "resetConversation exception: " << e.what() << std::endl;
     return false;
   }
 }

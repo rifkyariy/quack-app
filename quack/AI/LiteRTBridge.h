@@ -64,6 +64,11 @@ public:
   std::string inferWithImage(const std::string &imageFilePath,
                              const std::string &textPrompt);
 
+  /// Rebuilds the Conversation from the existing Engine, discarding all
+  /// accumulated turn history. Use to give each mission a clean context.
+  /// - Returns: True on success, false if not initialized or rebuild failed.
+  bool resetConversation();
+
   /// Releases resources and cleans up the model.
   void shutdown();
 

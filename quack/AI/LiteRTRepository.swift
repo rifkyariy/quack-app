@@ -248,6 +248,17 @@ actor LiteRTRepository: InferenceRepository {
         return output
     }
 
+    /// Discards accumulated conversation history so the next inference runs on
+    /// a clean context. Call between independent mission use-cases.
+    func resetConversation() async throws {
+        guard let bridge = bridge, isInitialized else {
+            throw RepositoryError.notInitialized
+        }
+        guard bridge.resetConversation() else {
+            throw RepositoryError.inferenceFailed("Failed to reset conversation context")
+        }
+    }
+
     /// Writes raw 16-bit PCM data as a WAV file and returns the file path.
     private func writeWAVFile(pcmData: Data, sampleRate: Int, channels: Int, bitsPerSample: Int) throws -> String {
         let tempDir = NSTemporaryDirectory()

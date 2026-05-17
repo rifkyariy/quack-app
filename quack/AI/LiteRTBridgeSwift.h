@@ -59,6 +59,10 @@ typedef void (^ObjCTokenCallback)(NSString *_Nullable token, BOOL isComplete);
 /// - Returns: YES on success, NO on failure.
 - (BOOL)inferStreamingWithAudioPath:(NSString *)audioPath prompt:(NSString *)prompt completion:(ObjCTokenCallback)completion;
 
+/// Discards accumulated conversation history by rebuilding the Conversation.
+/// - Returns: YES on success, NO on failure.
+- (BOOL)resetConversation;
+
 /// Returns true if the model is loaded and ready.
 @property(nonatomic, readonly) BOOL isReady;
 

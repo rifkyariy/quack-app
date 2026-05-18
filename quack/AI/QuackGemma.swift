@@ -1,9 +1,10 @@
 import Foundation
 import Observation
+import LiteRTLM
 
 /// Shared on-device Gemma 4 inference service for quack missions.
-/// Lazily loads the bundled .litertlm model on first use and keeps it warm
-/// for the lifetime of the app.
+/// Lazily loads the bundled .litertlm model on first use and keeps the
+/// LiteRT-LM `Engine` warm for the lifetime of the app.
 @MainActor
 @Observable
 final class QuackGemma {
@@ -18,8 +19,10 @@ final class QuackGemma {
 
     private(set) var state: LoadState = .idle
 
-    private let repo = LiteRTRepository()
-    private var loadTask: Task<Void, Error>?
+    /// The one-time engine load. Once resolved, `.value` returns the same
+    /// initialized `Engine` to every caller — `Conversation`s are created
+    /// fresh per mission, the engine itself is shared.
+    private var loadTask: Task<Engine, Error>?
 
     private init() {}
 
@@ -27,20 +30,14 @@ final class QuackGemma {
     func preload() {
         guard loadTask == nil else { return }
         state = .loading
-        let repo = self.repo
-        loadTask = Task.detached(priority: .userInitiated) {
-            guard let path = Bundle.main.path(
-                forResource: "gemma-4-E2B-it",
-                ofType: "litertlm"
-            ) else {
-                throw GemmaError.modelMissing
-            }
-            try await repo.initialize(modelPath: path)
+        let task = Task.detached(priority: .userInitiated) {
+            try await Self.makeEngine()
         }
+        loadTask = task
         Task { [weak self] in
             guard let self else { return }
             do {
-                try await self.loadTask?.value
+                _ = try await task.value
                 self.state = .ready
             } catch {
                 self.state = .failed(error.localizedDescription)
@@ -50,8 +47,40 @@ final class QuackGemma {
 
     /// Awaits the model becoming ready. Triggers a preload if none is in flight.
     func ensureReady() async throws {
+        _ = try await engine()
+    }
+
+    /// Returns the initialized engine, starting a preload if needed.
+    private func engine() async throws -> Engine {
         if loadTask == nil { preload() }
-        try await loadTask?.value
+        guard let loadTask else { throw GemmaError.modelMissing }
+        return try await loadTask.value
+    }
+
+    /// Builds and initializes the LiteRT-LM engine for the bundled model.
+    /// Runs CPU backends across text, vision, and audio — the multimodal
+    /// missions need all three.
+    private static func makeEngine() async throws -> Engine {
+        guard let modelPath = Bundle.main.path(
+            forResource: "gemma-4-E4B-it",
+            ofType: "litertlm"
+        ) else {
+            throw GemmaError.modelMissing
+        }
+        // The model lives in the read-only app bundle; LiteRT-LM needs a
+        // writable directory for its cache files.
+        let cacheDir = FileManager.default
+            .urls(for: .cachesDirectory, in: .userDomainMask).first?.path
+        let config = try EngineConfig(
+            modelPath: modelPath,
+            backend: .cpu(),
+            visionBackend: .cpu(),
+            audioBackend: .cpu(),
+            cacheDir: cacheDir
+        )
+        let engine = Engine(engineConfig: config)
+        try await engine.initialize()
+        return engine
     }
 
     // MARK: - Mission use cases
@@ -66,12 +95,14 @@ final class QuackGemma {
     /// transcription-then-compare for reliability — Gemma transcribes what
     /// it heard, Swift computes similarity.
     func scorePronunciation(audio: Data, target: VocabItem) async throws -> PronunciationResult {
-        try await ensureReady()
-        // Discard any prior mission's turn history so this scoring runs on a
-        // clean context (the LiteRT-LM Conversation is shared across missions).
-        try await repo.resetConversation()
-        // Do NOT include the target word — small models (Gemma E2B) will
-        // regurgitate the reference instead of transcribing what they heard.
+        let engine = try await engine()
+        // A fresh conversation gives this scoring a clean context, with no
+        // turn history leaking in from a prior mission.
+        let conversation = try await engine.createConversation()
+        let wavPath = try Self.writeWAVFile(pcmData: audio)
+        defer { try? FileManager.default.removeItem(atPath: wavPath) }
+        // Do NOT include the target word — small models will regurgitate the
+        // reference instead of transcribing what they heard.
         let prompt = """
         Transcribe this audio as Mandarin pinyin. Lowercase letters only, \
         no tone marks, no spaces inside a single word, no punctuation, no \
@@ -80,8 +111,10 @@ final class QuackGemma {
         exactly: none
         Respond on a single line with just the pinyin or the word "none".
         """
-        let raw = try await repo.inferAudio(audioData: audio, prompt: prompt)
-        let heard = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let response = try await conversation.sendMessage(
+            Message(of: .audioFile(wavPath), .text(prompt))
+        )
+        let heard = response.toString.trimmingCharacters(in: .whitespacesAndNewlines)
         let score = Self.pronunciationScore(heard: heard, target: target.pinyin)
         print("[QuackGemma] scorePronunciation target=\(target.pinyin) raw='\(heard)' score=\(score)")
         return PronunciationResult(score: score, heard: heard)
@@ -99,10 +132,11 @@ final class QuackGemma {
     /// yes/no question — handing a small model the expected answer biases it
     /// toward agreement (same reason scorePronunciation hides the target).
     func recognizeObject(image: Data, target: VocabItem) async throws -> VisionResult {
-        try await ensureReady()
-        // Discard any prior mission's turn history so this recognition runs on
-        // a clean context (the LiteRT-LM Conversation is shared across missions).
-        try await repo.resetConversation()
+        let engine = try await engine()
+        // A fresh conversation gives this recognition a clean context.
+        let conversation = try await engine.createConversation()
+        let imagePath = try Self.writeTempImage(image)
+        defer { try? FileManager.default.removeItem(atPath: imagePath) }
         let prompt = """
         Look at this photo. What is the main object in it? \
         Answer with just one or two words in English, all lowercase, no \
@@ -110,8 +144,10 @@ final class QuackGemma {
         If you cannot tell, respond with exactly: none
         Respond on a single line.
         """
-        let raw = try await repo.inferImage(imageData: image, prompt: prompt)
-        let recognized = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let response = try await conversation.sendMessage(
+            Message(of: .imageFile(imagePath), .text(prompt))
+        )
+        let recognized = response.toString.trimmingCharacters(in: .whitespacesAndNewlines)
         let matched = Self.objectMatches(recognized: recognized, target: target.en)
         print("[QuackGemma] recognizeObject target=\(target.en) raw='\(recognized)' matched=\(matched)")
         return VisionResult(recognized: recognized, matched: matched)
@@ -199,6 +235,66 @@ final class QuackGemma {
             swap(&prev, &curr)
         }
         return prev[bChars.count]
+    }
+
+    // MARK: - Temp file helpers
+
+    /// Writes raw 16-bit PCM as a WAV file in the temp directory and returns
+    /// its path. LiteRT-LM expects audio as 16-bit signed LE PCM, 16 kHz mono
+    /// — exactly what `MicRecorder` produces; this only adds the WAV framing.
+    private static func writeWAVFile(
+        pcmData: Data,
+        sampleRate: Int = 16000,
+        channels: Int = 1,
+        bitsPerSample: Int = 16
+    ) throws -> String {
+        let tempDir = NSTemporaryDirectory()
+        let fileName = "quack_audio_\(UUID().uuidString).wav"
+        let filePath = (tempDir as NSString).appendingPathComponent(fileName)
+
+        let dataSize = UInt32(pcmData.count)
+        let byteRate = UInt32(sampleRate * channels * bitsPerSample / 8)
+        let blockAlign = UInt16(channels * bitsPerSample / 8)
+
+        var header = Data()
+        header.append(contentsOf: [0x52, 0x49, 0x46, 0x46]) // "RIFF"
+        var chunkSize = UInt32(36 + dataSize).littleEndian
+        header.append(Data(bytes: &chunkSize, count: 4))
+        header.append(contentsOf: [0x57, 0x41, 0x56, 0x45]) // "WAVE"
+
+        header.append(contentsOf: [0x66, 0x6D, 0x74, 0x20]) // "fmt "
+        var subchunk1Size = UInt32(16).littleEndian
+        header.append(Data(bytes: &subchunk1Size, count: 4))
+        var audioFormat = UInt16(1).littleEndian // PCM
+        header.append(Data(bytes: &audioFormat, count: 2))
+        var numChannels = UInt16(channels).littleEndian
+        header.append(Data(bytes: &numChannels, count: 2))
+        var sampleRateLE = UInt32(sampleRate).littleEndian
+        header.append(Data(bytes: &sampleRateLE, count: 4))
+        var byteRateLE = byteRate.littleEndian
+        header.append(Data(bytes: &byteRateLE, count: 4))
+        var blockAlignLE = blockAlign.littleEndian
+        header.append(Data(bytes: &blockAlignLE, count: 2))
+        var bitsPerSampleLE = UInt16(bitsPerSample).littleEndian
+        header.append(Data(bytes: &bitsPerSampleLE, count: 2))
+
+        header.append(contentsOf: [0x64, 0x61, 0x74, 0x61]) // "data"
+        var dataSizeLE = dataSize.littleEndian
+        header.append(Data(bytes: &dataSizeLE, count: 4))
+
+        var wavData = header
+        wavData.append(pcmData)
+        try wavData.write(to: URL(fileURLWithPath: filePath))
+        return filePath
+    }
+
+    /// Writes image bytes to a temp JPEG file and returns its path.
+    private static func writeTempImage(_ imageData: Data) throws -> String {
+        let tempDir = NSTemporaryDirectory()
+        let fileName = "quack_image_\(UUID().uuidString).jpg"
+        let filePath = (tempDir as NSString).appendingPathComponent(fileName)
+        try imageData.write(to: URL(fileURLWithPath: filePath))
+        return filePath
     }
 
     enum GemmaError: LocalizedError {

@@ -8,10 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		8516A4552FB7592F00F0348B /* Sticker in Frameworks */ = {isa = PBXBuildFile; productRef = 0F04323C24F449398B8E4B35 /* Sticker */; };
-		D110A001000000000000F801 /* gemma-4-E2B-it.litertlm in Resources */ = {isa = PBXBuildFile; fileRef = D110A001000000000000F901 /* gemma-4-E2B-it.litertlm */; };
+		D110A001000000000000A003 /* LiteRTLM in Frameworks */ = {isa = PBXBuildFile; productRef = D110A001000000000000A002 /* LiteRTLM */; };
+		D110A001000000000000F801 /* gemma-4-E4B-it.litertlm in Resources */ = {isa = PBXBuildFile; fileRef = D110A001000000000000F901 /* gemma-4-E4B-it.litertlm */; };
 		D110A001000000000000F802 /* chat_template.jinja in Resources */ = {isa = PBXBuildFile; fileRef = D110A001000000000000F902 /* chat_template.jinja */; };
 		D110A001000000000000FF01 /* libGemmaModelConstraintProvider.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		D110A001000000000000FF02 /* libLiteRtMetalAccelerator.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = D110A001000000000000FE02 /* libLiteRtMetalAccelerator.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,7 +39,6 @@
 			dstSubfolderSpec = 10;
 			files = (
 				D110A001000000000000FF01 /* libGemmaModelConstraintProvider.dylib in Embed Frameworks */,
-				D110A001000000000000FF02 /* libLiteRtMetalAccelerator.dylib in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -50,10 +49,9 @@
 		41AEEFE02FACFCED00AD4E6C /* quack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = quack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		41AEEFED2FACFCF000AD4E6C /* quackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = quackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		41AEEFF72FACFCF000AD4E6C /* quackUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = quackUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		D110A001000000000000F901 /* gemma-4-E2B-it.litertlm */ = {isa = PBXFileReference; lastKnownFileType = file; name = "gemma-4-E2B-it.litertlm"; path = "/Volumes/Data/Developments/apple/Swift/Spiku/Spiku/Resources/gemma-4-E2B-it.litertlm"; sourceTree = "<absolute>"; };
+		D110A001000000000000F901 /* gemma-4-E4B-it.litertlm */ = {isa = PBXFileReference; lastKnownFileType = file; name = "gemma-4-E4B-it.litertlm"; path = "/Users/satyaadhiyaksa/Downloads/gemma-4-E4B-it.litertlm"; sourceTree = "<absolute>"; };
 		D110A001000000000000F902 /* chat_template.jinja */ = {isa = PBXFileReference; lastKnownFileType = text; name = chat_template.jinja; path = /Volumes/Data/Developments/apple/Swift/Spiku/Spiku/Resources/chat_template.jinja; sourceTree = "<absolute>"; };
-		D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libGemmaModelConstraintProvider.dylib; path = /Volumes/Data/Developments/apple/Swift/LiteRTLib/libGemmaModelConstraintProvider.dylib; sourceTree = "<absolute>"; };
-		D110A001000000000000FE02 /* libLiteRtMetalAccelerator.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libLiteRtMetalAccelerator.dylib; path = /Volumes/Data/Developments/apple/Swift/LiteRTLib/libLiteRtMetalAccelerator.dylib; sourceTree = "<absolute>"; };
+		D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libGemmaModelConstraintProvider.dylib; path = /Volumes/Data/Developments/apple/Swift/litertrepo/prebuilt/ios_arm64/libGemmaModelConstraintProvider.dylib; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -80,6 +78,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8516A4552FB7592F00F0348B /* Sticker in Frameworks */,
+				D110A001000000000000A003 /* LiteRTLM in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,8 +124,7 @@
 			isa = PBXGroup;
 			children = (
 				D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */,
-				D110A001000000000000FE02 /* libLiteRtMetalAccelerator.dylib */,
-				D110A001000000000000F901 /* gemma-4-E2B-it.litertlm */,
+				D110A001000000000000F901 /* gemma-4-E4B-it.litertlm */,
 				D110A001000000000000F902 /* chat_template.jinja */,
 			);
 			name = Frameworks;
@@ -154,6 +152,7 @@
 			name = quack;
 			packageProductDependencies = (
 				0F04323C24F449398B8E4B35 /* Sticker */,
+				D110A001000000000000A002 /* LiteRTLM */,
 			);
 			productName = quack;
 			productReference = 41AEEFE02FACFCED00AD4E6C /* quack.app */;
@@ -239,6 +238,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				4109B6DB2FB4BE20004139CB /* XCRemoteSwiftPackageReference "Sticker" */,
+				D110A001000000000000A001 /* XCLocalSwiftPackageReference "../Swift/litertrepo" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 41AEEFE12FACFCED00AD4E6C /* Products */;
@@ -257,7 +257,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D110A001000000000000F801 /* gemma-4-E2B-it.litertlm in Resources */,
+				D110A001000000000000F801 /* gemma-4-E4B-it.litertlm in Resources */,
 				D110A001000000000000F802 /* chat_template.jinja in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -442,25 +442,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CODE_SIGN_ENTITLEMENTS = quack/quack.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 4JH6AF2L77;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/quack",
-					"$(SRCROOT)/quack/AI",
-					"/Volumes/Data/bazel_root/execroot/litert_lm/bazel-out/ios_arm64-opt/bin/external/litert",
-					/Volumes/Data/Developments/apple/Swift/litertrepo,
-					/Volumes/Data/bazel_root/external/com_google_absl,
-					/Volumes/Data/bazel_root/external/nlohmann_json/single_include,
-					/Volumes/Data/bazel_root/external/litert,
-					/Volumes/Data/bazel_root/external/com_google_protobuf/src,
-					"/Volumes/Data/bazel_root/execroot/litert_lm/bazel-out/ios_arm64-opt/bin",
-					/Volumes/Data/bazel_root/external/flatbuffers/include,
-					"/Volumes/Data/bazel_root/external/crate_index__cxx-1.0.149/include",
-				);
 				INFOPLIST_KEY_NSCameraUsageDescription = "Quack uses the camera so the duck can see and recognize the objects you point at.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Quack uses the microphone to hear you say new words and give pronunciation feedback.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -472,25 +459,17 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					/Volumes/Data/Developments/apple/Swift/LiteRTLib,
-				);
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"-lc++",
-					"-lGemmaModelConstraintProvider",
 					"-framework",
 					AVFoundation,
 					"-framework",
 					AudioToolbox,
-					"-force_load",
-					/Volumes/Data/Developments/apple/Swift/LiteRTLib/liblitert_lm_complete.a,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.satyaadhiyaksa.quack;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "quack/quack-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -501,25 +480,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CODE_SIGN_ENTITLEMENTS = quack/quack.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 4JH6AF2L77;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/quack",
-					"$(SRCROOT)/quack/AI",
-					"/Volumes/Data/bazel_root/execroot/litert_lm/bazel-out/ios_arm64-opt/bin/external/litert",
-					/Volumes/Data/Developments/apple/Swift/litertrepo,
-					/Volumes/Data/bazel_root/external/com_google_absl,
-					/Volumes/Data/bazel_root/external/nlohmann_json/single_include,
-					/Volumes/Data/bazel_root/external/litert,
-					/Volumes/Data/bazel_root/external/com_google_protobuf/src,
-					"/Volumes/Data/bazel_root/execroot/litert_lm/bazel-out/ios_arm64-opt/bin",
-					/Volumes/Data/bazel_root/external/flatbuffers/include,
-					"/Volumes/Data/bazel_root/external/crate_index__cxx-1.0.149/include",
-				);
 				INFOPLIST_KEY_NSCameraUsageDescription = "Quack uses the camera so the duck can see and recognize the objects you point at.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Quack uses the microphone to hear you say new words and give pronunciation feedback.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -531,25 +497,17 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					/Volumes/Data/Developments/apple/Swift/LiteRTLib,
-				);
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"-lc++",
-					"-lGemmaModelConstraintProvider",
 					"-framework",
 					AVFoundation,
 					"-framework",
 					AudioToolbox,
-					"-force_load",
-					/Volumes/Data/Developments/apple/Swift/LiteRTLib/liblitert_lm_complete.a,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.satyaadhiyaksa.quack;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "quack/quack-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -668,6 +626,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		D110A001000000000000A001 /* XCLocalSwiftPackageReference "../Swift/litertrepo" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Swift/litertrepo;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		4109B6DB2FB4BE20004139CB /* XCRemoteSwiftPackageReference "Sticker" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -684,6 +649,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4109B6DB2FB4BE20004139CB /* XCRemoteSwiftPackageReference "Sticker" */;
 			productName = Sticker;
+		};
+		D110A001000000000000A002 /* LiteRTLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D110A001000000000000A001 /* XCLocalSwiftPackageReference "../Swift/litertrepo" */;
+			productName = LiteRTLM;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

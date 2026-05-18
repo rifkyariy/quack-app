@@ -79,6 +79,10 @@ family, food, fruits, household*.
 |:--:|:--:|:--:|
 | ![Recording](docs/screenshots/speak-recording.png) | ![Score](docs/screenshots/speak-correct.png) | ![Parent](docs/screenshots/parent.png) |
 
+| Match it | Story time | Mission complete 🎉 |
+|:--:|:--:|:--:|
+| ![Match it](docs/screenshots/match.png) | ![Story](docs/screenshots/story.png) | ![Complete](docs/screenshots/complete.png) |
+
 ---
 
 ## 🔍 How the AI missions work

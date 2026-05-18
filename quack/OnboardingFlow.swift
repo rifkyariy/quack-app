@@ -89,6 +89,7 @@ struct SplashView: View {
                     .font(.bodyText(13, weight: .bold))
                     .foregroundStyle(.white.opacity(0.85))
                     .underline())
+                    .padding(.top, 16)
 
                 Spacer().frame(height: 32)
             }

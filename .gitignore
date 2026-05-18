@@ -10,3 +10,8 @@
 # Xcode per-user state
 xcuserdata/
 *.xcuserstate
+
+# Local tooling — agent/issue-tracker state, not for the remote
+.beads/
+.claude/
+.superpowers/

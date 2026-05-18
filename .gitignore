@@ -15,3 +15,7 @@ xcuserdata/
 .beads/
 .claude/
 .superpowers/
+
+# Agent instructions — local only, kept out of the remote
+CLAUDE.md
+AGENTS.md

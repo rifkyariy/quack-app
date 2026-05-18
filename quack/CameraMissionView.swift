@@ -111,6 +111,22 @@ struct CameraMissionView: View {
 
             CameraCornerBrackets()
 
+            if camera.isAvailable, camera.canFlip, phase == .scan {
+                Button { flipCamera() } label: {
+                    Circle()
+                        .fill(Color.ink.opacity(0.55))
+                        .frame(width: 44, height: 44)
+                        .overlay(
+                            Image(systemName: "camera.rotate")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(.white)
+                        )
+                }
+                .buttonStyle(TapPress())
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(16)
+            }
+
             if phase == .checking {
                 RoundedRectangle(cornerRadius: 20)
                     .fill(Color.ink.opacity(0.45))
@@ -251,6 +267,14 @@ struct CameraMissionView: View {
                 errorMessage = error.localizedDescription
                 withAnimation { phase = .scan }
             }
+        }
+    }
+
+    private func flipCamera() {
+        do {
+            try camera.flipCamera()
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 

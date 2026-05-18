@@ -37,9 +37,19 @@ final class CameraCapture: NSObject {
     private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
     private var previewRotationObservation: NSKeyValueObservation?
 
+    /// The camera currently feeding the session.
+    private(set) var position: AVCaptureDevice.Position = .front
+    private var currentInput: AVCaptureDeviceInput?
+
     /// True when this device actually has a usable camera (false in Simulator).
     var isAvailable: Bool {
         AVCaptureDevice.default(for: .video) != nil
+    }
+
+    /// True when the device has both a front and a back camera to flip between.
+    var canFlip: Bool {
+        AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) != nil
+            && AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) != nil
     }
 
     /// Requests camera permission, returning the final granted state.
@@ -82,12 +92,50 @@ final class CameraCapture: NSObject {
         session.addInput(input)
         session.addOutput(photoOutput)
         session.commitConfiguration()
+        currentInput = input
+        position = device.position
         previewLayer.session = session
         previewLayer.videoGravity = .resizeAspectFill
+        syncRotationCoordinator(to: device)
+        configured = true
+    }
 
-        // RotationCoordinator keeps preview + capture level with the horizon
-        // regardless of device orientation. Without it a rotated phone yields
-        // a sideways preview and a sideways JPEG (which Gemma then misreads).
+    /// Switches between the front and back camera live, without stopping the
+    /// session. Safe to call once `configure()` has run.
+    func flipCamera() throws {
+        guard configured, let currentInput else { return }
+        let newPosition: AVCaptureDevice.Position = position == .front ? .back : .front
+        guard let device = AVCaptureDevice.default(
+            .builtInWideAngleCamera, for: .video, position: newPosition)
+        else {
+            throw CaptureError.unavailable
+        }
+        let newInput: AVCaptureDeviceInput
+        do {
+            newInput = try AVCaptureDeviceInput(device: device)
+        } catch {
+            throw CaptureError.captureFailed(error.localizedDescription)
+        }
+        session.beginConfiguration()
+        session.removeInput(currentInput)
+        guard session.canAddInput(newInput) else {
+            session.addInput(currentInput)  // roll back to the working input
+            session.commitConfiguration()
+            throw CaptureError.unavailable
+        }
+        session.addInput(newInput)
+        session.commitConfiguration()
+        self.currentInput = newInput
+        position = newPosition
+        syncRotationCoordinator(to: device)
+    }
+
+    /// Points a fresh RotationCoordinator at `device` so preview and capture
+    /// stay level with the horizon regardless of device orientation. Without
+    /// it a rotated phone yields a sideways preview and a sideways JPEG
+    /// (which Gemma then misreads). Replaces any previous coordinator.
+    private func syncRotationCoordinator(to device: AVCaptureDevice) {
+        previewRotationObservation?.invalidate()
         let coordinator = AVCaptureDevice.RotationCoordinator(
             device: device, previewLayer: previewLayer)
         rotationCoordinator = coordinator
@@ -100,7 +148,6 @@ final class CameraCapture: NSObject {
                 self?.previewLayer.connection?.videoRotationAngle = angle
             }
         }
-        configured = true
     }
 
     /// Starts the capture session on a serial background queue.

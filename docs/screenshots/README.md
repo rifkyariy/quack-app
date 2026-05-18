@@ -14,7 +14,8 @@ App screenshots used by `../../WRITEUP.md`. Captured on an iPhone 15 Pro.
 | `speak-recording.png` | Say it — recording |
 | `speak-correct.png` | Say it — 100%, Word ✓ Tone ✓ |
 | `speak-result.png` | Say it — a missed attempt |
-| `story.png` | Story time |
+| `story.png` | Story time — a Gemma-written story page |
+| `story-loading.png` | Story time — "Q is writing today's story…" |
 | `story-quiz.png` | Story time — end-of-story quiz |
 | `match.png` | Match it — a correct match |
 | `library.png` | Sticker library |

@@ -182,6 +182,62 @@ final class QuackGemma {
         return VisionResult(recognized: recognized, matched: matched)
     }
 
+    /// Generates a 3-line mini story — one line per vocab item — using Gemma's
+    /// text modality. Each line teaches one word. Throws if the model does not
+    /// return three usable lines, so the caller can fall back to a template.
+    func generateStory(items: [VocabItem]) async throws -> [String] {
+        guard items.count >= 3 else { throw GemmaError.storyGenerationFailed }
+        let engine = try await engine()
+        // A fresh conversation; no greedy sampler — a story wants some variety.
+        let conversation = try await engine.createConversation(
+            with: ConversationConfig(
+                systemMessage: Message(
+                    """
+                    You are Q, a cheerful secret-agent duck who helps young \
+                    children learn Mandarin. You write tiny, simple, happy \
+                    stories a five-year-old can follow.
+                    """,
+                    role: .system
+                )
+            )
+        )
+        let w = items
+        let prompt = """
+        Write a 3-line mini story for a young child learning Mandarin. Output \
+        exactly 3 lines — one short, cheerful sentence per line — and nothing else.
+        Line 1 teaches "\(w[0].en)": Chinese \(w[0].hanzi), pinyin \(w[0].pinyin).
+        Line 2 teaches "\(w[1].en)": Chinese \(w[1].hanzi), pinyin \(w[1].pinyin).
+        Line 3 teaches "\(w[2].en)": Chinese \(w[2].hanzi), pinyin \(w[2].pinyin).
+        Each sentence must name the English word, show the Chinese characters, \
+        and give the pinyin, and mention Q the duck. No line numbers, no extra text.
+        """
+        let response = try await conversation.sendMessage(Message(prompt))
+        let lines = response.toString
+            .split(whereSeparator: \.isNewline)
+            .map { Self.cleanStoryLine(String($0)) }
+            .filter { !$0.isEmpty }
+        guard lines.count >= 3 else { throw GemmaError.storyGenerationFailed }
+        print("[QuackGemma] generateStory produced \(lines.count) lines")
+        return Array(lines.prefix(3))
+    }
+
+    /// Strips leading list markers ("1.", "-", "*") and surrounding whitespace
+    /// from a generated story line.
+    private static func cleanStoryLine(_ raw: String) -> String {
+        var s = raw.trimmingCharacters(in: .whitespaces)
+        while let first = s.first, "-*•".contains(first) {
+            s = String(s.dropFirst()).trimmingCharacters(in: .whitespaces)
+        }
+        // Drop a leading "1." / "1)" enumerator.
+        if let mark = s.firstIndex(where: { $0 == "." || $0 == ")" }),
+           s.distance(from: s.startIndex, to: mark) <= 2,
+           s[s.startIndex..<mark].allSatisfy(\.isNumber),
+           mark != s.startIndex {
+            s = String(s[s.index(after: mark)...]).trimmingCharacters(in: .whitespaces)
+        }
+        return s
+    }
+
     /// Decides whether Gemma's recognized object name matches the target
     /// English word. Compares word-by-word: normalize() drops spaces, so a
     /// substring test on the whole phrase would falsely match "egg" inside
@@ -397,10 +453,13 @@ final class QuackGemma {
 
     enum GemmaError: LocalizedError {
         case modelMissing
+        case storyGenerationFailed
         var errorDescription: String? {
             switch self {
             case .modelMissing:
                 return "Gemma model file is missing from the app bundle."
+            case .storyGenerationFailed:
+                return "Could not generate a story."
             }
         }
     }

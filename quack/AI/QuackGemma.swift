@@ -62,7 +62,7 @@ final class QuackGemma {
     /// missions need all three.
     private static func makeEngine() async throws -> Engine {
         guard let modelPath = Bundle.main.path(
-            forResource: "gemma-4-E4B-it",
+            forResource: "gemma-4-E2B-it",
             ofType: "litertlm"
         ) else {
             throw GemmaError.modelMissing
@@ -86,38 +86,67 @@ final class QuackGemma {
     // MARK: - Mission use cases
 
     struct PronunciationResult {
+        /// Blended 0–100 score: syllable similarity, modulated by tone.
         let score: Int
+        /// The pinyin syllables the model heard (toneless letters, for display).
         let heard: String
+        /// Whether the spoken syllables basically match the target word.
+        let syllableOK: Bool
+        /// Whether every tone in the target was pronounced correctly.
+        let toneOK: Bool
+        /// An encouraging hint shown when the word was right but a tone was off.
+        let toneHint: String
     }
 
-    /// Returns a 0–100 pronunciation score plus the raw pinyin transcription
+    /// Returns a blended pronunciation score plus the pinyin transcription
     /// for the spoken audio against the target Mandarin vocab item. Uses
     /// transcription-then-compare for reliability — Gemma transcribes what
-    /// it heard, Swift computes similarity.
+    /// it heard (syllables and tone), Swift computes similarity.
     func scorePronunciation(audio: Data, target: VocabItem) async throws -> PronunciationResult {
         let engine = try await engine()
         // A fresh conversation gives this scoring a clean context, with no
-        // turn history leaking in from a prior mission.
-        let conversation = try await engine.createConversation()
+        // turn history leaking in from a prior mission. A system message
+        // anchors the task — framing the speaker as a beginner stops the
+        // model from rejecting imperfect pronunciation — and greedy
+        // sampling (topK 1) keeps the transcription deterministic so the
+        // same recording always scores the same.
+        let config = ConversationConfig(
+            systemMessage: Message(
+                """
+                You transcribe a single spoken Mandarin Chinese word into \
+                Hanyu Pinyin with a tone number after each syllable. The \
+                speaker is a young child learning Mandarin, so their \
+                pronunciation is often imperfect — always write your best \
+                guess at both the syllables and the tone you heard, rather \
+                than refusing.
+                """,
+                role: .system
+            ),
+            samplerConfig: try? SamplerConfig(topK: 1, topP: 1.0, temperature: 1.0)
+        )
+        let conversation = try await engine.createConversation(with: config)
         let wavPath = try Self.writeWAVFile(pcmData: audio)
         defer { try? FileManager.default.removeItem(atPath: wavPath) }
         // Do NOT include the target word — small models will regurgitate the
-        // reference instead of transcribing what they heard.
+        // reference instead of transcribing what they heard. Ask for numbered
+        // pinyin so we can grade the tone. Reserve "none" for genuine silence;
+        // a learner's imperfect attempt should still be transcribed.
         let prompt = """
-        Transcribe this audio as Mandarin pinyin. Lowercase letters only, \
-        no tone marks, no spaces inside a single word, no punctuation, no \
-        English translation.
-        If the audio is silent, in English, or not Mandarin, respond with \
-        exactly: none
-        Respond on a single line with just the pinyin or the word "none".
+        Write the Mandarin word in this audio as Hanyu Pinyin with a tone \
+        number right after each syllable: 1 high, 2 rising, 3 dipping, \
+        4 falling, 5 neutral. Lowercase letters only, no spaces, no tone \
+        marks, no other text. Examples: mao1, mi3fan4, ping2guo3.
+        Only if the audio is completely silent with no speech at all, \
+        reply with exactly: none
         """
         let response = try await conversation.sendMessage(
             Message(of: .audioFile(wavPath), .text(prompt))
         )
         let heard = response.toString.trimmingCharacters(in: .whitespacesAndNewlines)
-        let score = Self.pronunciationScore(heard: heard, target: target.pinyin)
-        print("[QuackGemma] scorePronunciation target=\(target.pinyin) raw='\(heard)' score=\(score)")
-        return PronunciationResult(score: score, heard: heard)
+        let result = Self.evaluatePronunciation(heard: heard, target: target.pinyin)
+        print("[QuackGemma] scorePronunciation target=\(target.pinyin) raw='\(heard)' "
+            + "score=\(result.score) syllableOK=\(result.syllableOK) toneOK=\(result.toneOK)")
+        return result
     }
 
     struct VisionResult {
@@ -186,23 +215,92 @@ final class QuackGemma {
         return false
     }
 
-    /// Computes a 0–100 score from a heard pinyin transcription against the
-    /// target pinyin. Returns 0 when the model signaled "none".
-    static func pronunciationScore(heard rawHeard: String, target rawTarget: String) -> Int {
-        let heard = normalize(rawHeard)
-        let target = normalize(rawTarget)
-        if heard.isEmpty || heard == "none" || heard.contains("none") {
-            return 0
+    /// Grades a heard pinyin transcription against the target. The score is
+    /// "blended & encouraging": syllable similarity carries the bulk of it
+    /// and tone correctness modulates the top third — so the right word with
+    /// a wrong tone still earns ~65%, and getting both right earns 100%.
+    static func evaluatePronunciation(heard rawHeard: String, target rawTarget: String) -> PronunciationResult {
+        let heardLetters = normalize(rawHeard)
+        let targetLetters = normalize(rawTarget)
+        // Genuine non-attempt (silence, or the model bailed with "none").
+        if heardLetters.isEmpty || rawHeard.lowercased().contains("none") {
+            return PronunciationResult(
+                score: 0, heard: heardLetters.isEmpty ? "—" : heardLetters,
+                syllableOK: false, toneOK: false, toneHint: ""
+            )
         }
-        if heard == target { return 100 }
-        let distance = levenshtein(heard, target)
-        let maxLen = max(target.count, heard.count)
-        guard maxLen > 0 else { return 0 }
-        let similarity = 1.0 - Double(distance) / Double(maxLen)
-        // Map 0..1 similarity to 0..100, but be strict: anything below
-        // ~0.4 similarity is functionally a different word.
-        let scaled = max(0.0, min(1.0, (similarity - 0.2) / 0.8))
-        return Int(round(scaled * 100))
+
+        // Syllable similarity (toneless letters), with a strict curve so
+        // anything below ~0.4 similarity is treated as a different word.
+        let syllable01: Double
+        if heardLetters == targetLetters {
+            syllable01 = 1.0
+        } else {
+            let distance = levenshtein(heardLetters, targetLetters)
+            let maxLen = max(targetLetters.count, heardLetters.count)
+            let similarity = maxLen > 0 ? 1.0 - Double(distance) / Double(maxLen) : 0
+            syllable01 = max(0.0, min(1.0, (similarity - 0.2) / 0.8))
+        }
+        let syllableOK = syllable01 >= 0.8
+
+        // Tone match over each of the target's tone positions.
+        let targetTones = tones(in: rawTarget)
+        let heardTones = tones(in: rawHeard)
+        var toneSim = 1.0
+        var toneOK = true
+        if !targetTones.isEmpty {
+            var matches = 0
+            for (i, tone) in targetTones.enumerated() where i < heardTones.count && heardTones[i] == tone {
+                matches += 1
+            }
+            toneSim = Double(matches) / Double(targetTones.count)
+            toneOK = matches == targetTones.count
+        }
+
+        // Syllable dominates; tone modulates the top 35%.
+        let blended = syllable01 * (0.65 + 0.35 * toneSim)
+        let score = Int(round(blended * 100))
+
+        // Encourage when they nailed the word but missed a tone.
+        var toneHint = ""
+        if syllableOK && !toneOK {
+            if targetTones.count == 1 {
+                toneHint = "Right word — try the \(toneName(targetTones[0])) tone!"
+            } else {
+                toneHint = "Right word — keep practising the tones!"
+            }
+        }
+        return PronunciationResult(
+            score: score, heard: heardLetters,
+            syllableOK: syllableOK, toneOK: toneOK, toneHint: toneHint
+        )
+    }
+
+    /// The tone numbers (1–5), in order, of a pinyin string. Handles numbered
+    /// pinyin ("mi3fan4" → [3,4]) and tone-marked pinyin ("mǐfàn" → [3,4]).
+    private static func tones(in pinyin: String) -> [Int] {
+        let digits = pinyin.compactMap { $0.wholeNumberValue }.filter { (1...5).contains($0) }
+        if !digits.isEmpty { return digits }
+        return pinyin.lowercased().compactMap { toneMarks[$0] }
+    }
+
+    /// Tone number for each tone-marked vowel.
+    private static let toneMarks: [Character: Int] = [
+        "ā": 1, "ē": 1, "ī": 1, "ō": 1, "ū": 1, "ǖ": 1,
+        "á": 2, "é": 2, "í": 2, "ó": 2, "ú": 2, "ǘ": 2,
+        "ǎ": 3, "ě": 3, "ǐ": 3, "ǒ": 3, "ǔ": 3, "ǚ": 3,
+        "à": 4, "è": 4, "ì": 4, "ò": 4, "ù": 4, "ǜ": 4,
+    ]
+
+    /// A kid-friendly name for a Mandarin tone.
+    private static func toneName(_ tone: Int) -> String {
+        switch tone {
+        case 1: return "flat"
+        case 2: return "rising"
+        case 3: return "dipping"
+        case 4: return "falling"
+        default: return "soft"
+        }
     }
 
     private static func normalize(_ s: String) -> String {

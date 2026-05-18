@@ -9,6 +9,9 @@ struct SpeakMissionView: View {
     @State private var phase: SpeakPhase = .idle
     @State private var score = 0
     @State private var heard: String = ""
+    @State private var syllableOK = false
+    @State private var toneOK = false
+    @State private var toneHint: String = ""
     @State private var lastRecording: Data?
     @State private var waveAnimating = false
     @State private var errorMessage: String?
@@ -201,6 +204,20 @@ struct SpeakMissionView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 12)
                 }
+                if !heard.isEmpty, heard != "—" {
+                    HStack(spacing: 16) {
+                        scorePart(ok: syllableOK, label: "Word")
+                        scorePart(ok: toneOK, label: "Tone")
+                    }
+                    .font(.bodyText(12, weight: .bold))
+                }
+                if !toneHint.isEmpty {
+                    Text(toneHint)
+                        .font(.bodyText(12, weight: .bold))
+                        .foregroundStyle(Color.quackOrange)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 12)
+                }
                 HStack(spacing: 14) {
                     Button { SpeechSpeaker.shared.speak(current.hanzi) } label: {
                         Pill(text: "Hear it", color: .cobalt)
@@ -217,6 +234,15 @@ struct SpeakMissionView: View {
             }
             .padding(20)
         }
+    }
+
+    /// A compact ✓/✗ indicator for one half of the pronunciation score.
+    private func scorePart(ok: Bool, label: String) -> some View {
+        HStack(spacing: 4) {
+            Text(ok ? "✓" : "✗")
+            Text(label)
+        }
+        .foregroundStyle(ok ? Color.mintDeep : Color.quackOrange)
     }
 
     private func startRecording() async {
@@ -273,6 +299,9 @@ struct SpeakMissionView: View {
                 await MainActor.run {
                     score = result.score
                     heard = result.heard
+                    syllableOK = result.syllableOK
+                    toneOK = result.toneOK
+                    toneHint = result.toneHint
                     withAnimation { phase = .result }
                 }
             } catch {
@@ -291,6 +320,9 @@ struct SpeakMissionView: View {
         SpeechSpeaker.shared.stop()
         errorMessage = nil
         heard = ""
+        syllableOK = false
+        toneOK = false
+        toneHint = ""
         lastRecording = nil
         phase = .idle
         score = 0

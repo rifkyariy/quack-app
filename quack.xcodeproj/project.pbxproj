@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		8516A4552FB7592F00F0348B /* Sticker in Frameworks */ = {isa = PBXBuildFile; productRef = 0F04323C24F449398B8E4B35 /* Sticker */; };
 		D110A001000000000000A003 /* LiteRTLM in Frameworks */ = {isa = PBXBuildFile; productRef = D110A001000000000000A002 /* LiteRTLM */; };
-		D110A001000000000000F801 /* gemma-4-E4B-it.litertlm in Resources */ = {isa = PBXBuildFile; fileRef = D110A001000000000000F901 /* gemma-4-E4B-it.litertlm */; };
+		D110A001000000000000F801 /* gemma-4-E2B-it.litertlm in Resources */ = {isa = PBXBuildFile; fileRef = D110A001000000000000F901 /* gemma-4-E2B-it.litertlm */; };
 		D110A001000000000000F802 /* chat_template.jinja in Resources */ = {isa = PBXBuildFile; fileRef = D110A001000000000000F902 /* chat_template.jinja */; };
 		D110A001000000000000FF01 /* libGemmaModelConstraintProvider.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -49,7 +49,7 @@
 		41AEEFE02FACFCED00AD4E6C /* quack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = quack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		41AEEFED2FACFCF000AD4E6C /* quackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = quackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		41AEEFF72FACFCF000AD4E6C /* quackUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = quackUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		D110A001000000000000F901 /* gemma-4-E4B-it.litertlm */ = {isa = PBXFileReference; lastKnownFileType = file; name = "gemma-4-E4B-it.litertlm"; path = "/Users/satyaadhiyaksa/Downloads/gemma-4-E4B-it.litertlm"; sourceTree = "<absolute>"; };
+		D110A001000000000000F901 /* gemma-4-E2B-it.litertlm */ = {isa = PBXFileReference; lastKnownFileType = file; name = "gemma-4-E2B-it.litertlm"; path = "/Volumes/Data/Developments/apple/Swift/Spiku/Spiku/Resources/gemma-4-E2B-it.litertlm"; sourceTree = "<absolute>"; };
 		D110A001000000000000F902 /* chat_template.jinja */ = {isa = PBXFileReference; lastKnownFileType = text; name = chat_template.jinja; path = /Volumes/Data/Developments/apple/Swift/Spiku/Spiku/Resources/chat_template.jinja; sourceTree = "<absolute>"; };
 		D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libGemmaModelConstraintProvider.dylib; path = /Volumes/Data/Developments/apple/Swift/litertrepo/prebuilt/ios_arm64/libGemmaModelConstraintProvider.dylib; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
@@ -124,7 +124,7 @@
 			isa = PBXGroup;
 			children = (
 				D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */,
-				D110A001000000000000F901 /* gemma-4-E4B-it.litertlm */,
+				D110A001000000000000F901 /* gemma-4-E2B-it.litertlm */,
 				D110A001000000000000F902 /* chat_template.jinja */,
 			);
 			name = Frameworks;
@@ -257,7 +257,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D110A001000000000000F801 /* gemma-4-E4B-it.litertlm in Resources */,
+				D110A001000000000000F801 /* gemma-4-E2B-it.litertlm in Resources */,
 				D110A001000000000000F802 /* chat_template.jinja in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

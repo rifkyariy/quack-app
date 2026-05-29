@@ -627,7 +627,7 @@ struct StickerTile: View {
         } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: 22)
-                    .fill(locked ? Color.inkFaint : item.tone.bg)
+                    .fill(locked ? item.tone.bg : item.tone.bg)
 
                 if !locked {
                     GrainOverlay()
@@ -645,16 +645,26 @@ struct StickerTile: View {
                         .padding(8)
                 }
 
-                VStack(spacing: 4) {
+                ZStack {
+                    // Faded hanzi in background (locked only)
                     if locked {
-                        QuackIcon(name: .lock, size: 28, color: .inkMuted, strokeWidth: 1.8)
-                    } else {
                         Text(item.hanzi)
                             .font(.display(hanziSize, weight: .heavy))
-                            .foregroundStyle(item.tone.fg)
-                        Text(item.pinyin)
-                            .font(.bodyText(10, weight: .bold))
-                            .foregroundStyle(item.tone.fg.opacity(0.9))
+                            .foregroundStyle(item.tone.fg.opacity(0.2))
+                    }
+
+                    // Lock icon on top
+                    VStack(spacing: 4) {
+                        if locked {
+                            QuackIcon(name: .lock, size: 28, color: .inkMuted, strokeWidth: 1.8)
+                        } else {
+                            Text(item.hanzi)
+                                .font(.display(hanziSize, weight: .heavy))
+                                .foregroundStyle(item.tone.fg)
+                            Text(item.pinyin)
+                                .font(.bodyText(10, weight: .bold))
+                                .foregroundStyle(item.tone.fg.opacity(0.9))
+                        }
                     }
                 }
             }
@@ -662,6 +672,7 @@ struct StickerTile: View {
             .aspectRatio(1, contentMode: .fit)
             .stickerEffect()
             .modifier(LoopingStickerMotionEffect())
+            .modifier(PulsingBorderEffect())
             .cardShadow()
             .scaleEffect(appeared ? 1 : 0.05)
             .opacity(appeared ? 1 : 0)

@@ -101,13 +101,37 @@ struct SetupView: View {
     }
 
     private func requestCameraPermission() async -> Bool {
-        // Stub for now, will be implemented in Task 6
-        return true
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+
+        switch status {
+        case .authorized:
+            return true
+        case .denied, .restricted:
+            return false
+        case .notDetermined:
+            return await AVCaptureDevice.requestAccess(for: .video)
+        @unknown default:
+            return false
+        }
     }
 
     private func requestMicrophonePermission() async -> Bool {
-        // Stub for now, will be implemented in Task 6
-        return true
+        let status = AVAudioApplication.shared.recordPermission
+
+        switch status {
+        case .granted:
+            return true
+        case .denied:
+            return false
+        case .undetermined:
+            return await withCheckedContinuation { continuation in
+                AVAudioApplication.requestRecordPermission { granted in
+                    continuation.resume(returning: granted)
+                }
+            }
+        @unknown default:
+            return false
+        }
     }
 }
 

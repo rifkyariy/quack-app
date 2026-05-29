@@ -30,11 +30,12 @@ struct OnboardingFlow: View {
     }
 
     private var progressBar: some View {
-        HStack(spacing: 8) {
+        let progressIdx = step.rawValue - 1  // name=0, age=1, intro=2, setup=3
+        return HStack(spacing: 8) {
             ForEach(0..<4, id: \.self) { idx in
                 Capsule()
-                    .fill(idx <= step.rawValue ? Color.quackOrange : Color.quackOrange.opacity(0.25))
-                    .frame(width: idx == step.rawValue ? 28 : 8, height: 6)
+                    .fill(idx <= progressIdx ? Color.quackOrange : Color.quackOrange.opacity(0.25))
+                    .frame(width: idx == progressIdx ? 28 : 8, height: 6)
                     .animation(.spring(response: 0.4, dampingFraction: 0.7), value: step)
             }
         }
@@ -391,28 +392,106 @@ struct NameView: View {
         .environment(AppState())
 }
 
+// MARK: - AgeStepButton
+private struct AgeStepButton: View {
+    let symbol: String
+    let enabled: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 20, weight: .heavy))
+                .foregroundStyle(enabled ? Color.ink : Color.ink.opacity(0.3))
+                .frame(width: 48, height: 48)
+                .background(Color.white)
+                .clipShape(Circle())
+                .shadow(color: .ink.opacity(0.12), radius: 6, x: 0, y: 2)
+        }
+        .buttonStyle(TapPress())
+        .disabled(!enabled)
+    }
+}
+
+// MARK: - AgeSliderTrack
+private struct AgeSliderTrack: View {
+    @Binding var age: Int
+    private let minAge = 4
+    private let maxAge = 12
+    private let totalSteps = 9
+
+    @GestureState private var isDragging = false
+
+    private var fraction: Double {
+        Double(age - minAge) / Double(maxAge - minAge)
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let thumbX = max(13, min(w - 13, fraction * w))
+            let tickSpacing = w / Double(totalSteps - 1)
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.white.opacity(0.25))
+                    .frame(height: 6)
+                Capsule()
+                    .fill(Color.white.opacity(0.6))
+                    .frame(width: thumbX, height: 6)
+                ForEach(0..<totalSteps, id: \.self) { i in
+                    Rectangle()
+                        .fill(Color.white.opacity(i % 3 == 0 ? 0.7 : 0.35))
+                        .frame(width: 2, height: i % 3 == 0 ? 12 : 7)
+                        .position(x: Double(i) * tickSpacing, y: geo.size.height / 2)
+                }
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: isDragging ? 30 : 26, height: isDragging ? 30 : 26)
+                    .shadow(color: .ink.opacity(0.18), radius: isDragging ? 8 : 4, x: 0, y: 2)
+                    .position(x: thumbX, y: geo.size.height / 2)
+                    .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isDragging)
+            }
+            .frame(height: geo.size.height)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .updating($isDragging) { _, s, _ in s = true }
+                    .onChanged { v in
+                        let frac = max(0, min(1, v.location.x / w))
+                        let newAge = Int((frac * 8).rounded()) + minAge
+                        if newAge != age {
+                            age = newAge
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
+                    }
+            )
+        }
+    }
+}
+
 // MARK: - AgeView
 struct AgeView: View {
     let initial: Int
     let onBack: () -> Void
     let onNext: (Int) -> Void
 
-    private let ages = Array(4...12)
-    private let itemW: CGFloat = 72
-
-    @State private var selectedIndex: Int
+    @State private var age: Int
     @State private var appeared = false
-    @GestureState private var dragOffset: CGFloat = 0
 
     init(initial: Int, onBack: @escaping () -> Void, onNext: @escaping (Int) -> Void) {
         self.initial = initial
         self.onBack = onBack
         self.onNext = onNext
-        _selectedIndex = State(initialValue: max(0, min(8, initial - 4)))
+        _age = State(initialValue: max(4, min(12, initial)))
     }
 
-    private var floatSelected: Double {
-        Double(selectedIndex) - Double(dragOffset) / Double(itemW)
+    private func stepAge(by delta: Int) {
+        let newAge = max(4, min(12, age + delta))
+        if newAge != age {
+            age = newAge
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
     }
 
     var body: some View {
@@ -424,10 +503,8 @@ struct AgeView: View {
                     BackBtn(action: onBack)
                     Spacer()
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .offset(y: appeared ? 0 : 16)
-                .opacity(appeared ? 1 : 0)
+                .padding(.horizontal, 24).padding(.top, 16)
+                .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
                 .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -435,18 +512,16 @@ struct AgeView: View {
                     Text("How old are you?")
                         .font(.display(28, weight: .heavy))
                         .foregroundStyle(Color.ink)
-                    Text("Slide to pick · Q sets the level")
+                    Text("Q adjusts the level to match")
                         .font(.bodyText(13))
                         .foregroundStyle(Color.inkMuted)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.top, 14)
-                .offset(y: appeared ? 0 : 16)
-                .opacity(appeared ? 1 : 0)
+                .padding(.horizontal, 24).padding(.top, 14)
+                .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.05), value: appeared)
 
-                ZStack(alignment: .bottom) {
+                ZStack {
                     RoundedRectangle(cornerRadius: 28)
                         .fill(Color.quackOrange)
                         .grain()
@@ -454,116 +529,54 @@ struct AgeView: View {
 
                     Sparkles(count: 4, opacity: 0.5)
 
-                    VStack(spacing: 0) {
-                        // Horizontal ruler picker
-                        GeometryReader { geo in
-                            let cx = geo.size.width / 2
-                            let baseOffset = cx - CGFloat(floatSelected) * itemW - itemW / 2
-
-                            ZStack {
-                                HStack(spacing: 0) {
-                                    ForEach(ages.indices, id: \.self) { i in
-                                        let dist = abs(floatSelected - Double(i))
-                                        let isCenter = dist < 0.35
-                                        let scale = max(0.5, 1.0 - dist * 0.28)
-                                        let opacity = max(0.25, 1.0 - dist * 0.38)
-
-                                        ZStack {
-                                            if isCenter {
-                                                Circle()
-                                                    .fill(Color.white)
-                                                    .frame(width: 64, height: 64)
-                                                    .popShadow()
-                                            }
-                                            Text("\(ages[i])")
-                                                .font(.display(isCenter ? 40 : 26, weight: .heavy))
-                                                .foregroundStyle(isCenter ? Color.ink : Color.white)
-                                        }
-                                        .frame(width: itemW, height: 80)
-                                        .scaleEffect(scale)
-                                        .opacity(opacity)
-                                    }
-                                }
-                                .offset(x: baseOffset)
-
-                                // Edge fade gradients
-                                HStack {
-                                    LinearGradient(
-                                        colors: [Color.quackOrange, Color.quackOrange.opacity(0)],
-                                        startPoint: .leading, endPoint: .trailing
-                                    )
-                                    .frame(width: 48)
-                                    Spacer()
-                                    LinearGradient(
-                                        colors: [Color.quackOrange.opacity(0), Color.quackOrange],
-                                        startPoint: .leading, endPoint: .trailing
-                                    )
-                                    .frame(width: 48)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .contentShape(Rectangle())
-                            .simultaneousGesture(
-                                DragGesture()
-                                    .updating($dragOffset) { val, state, _ in
-                                        state = val.translation.width
-                                    }
-                                    .onEnded { val in
-                                        let steps = Int(
-                                            (-val.predictedEndTranslation.width / itemW).rounded()
-                                        )
-                                        selectedIndex = max(0, min(ages.count - 1, selectedIndex + steps))
-                                    }
-                            )
-                        }
-                        .frame(height: 100)
-                        .padding(.top, 24)
-
-                        VStack(spacing: 2) {
-                            Text("I AM")
-                                .font(.system(size: 12, weight: .heavy, design: .rounded))
-                                .tracking(12 * 0.14)
-                                .foregroundStyle(.white.opacity(0.85))
-                            Text("\(ages[max(0, min(ages.count - 1, Int(floatSelected.rounded())))]) years old")
-                                .font(.display(22, weight: .heavy))
+                    VStack(spacing: 20) {
+                        // Big animated number
+                        VStack(spacing: 4) {
+                            Text("\(age)")
+                                .font(.display(80, weight: .black))
                                 .foregroundStyle(.white)
+                                .contentTransition(.numericText(countsDown: false))
+                                .animation(.spring(response: 0.3, dampingFraction: 0.65), value: age)
+                                .frame(minWidth: 120)
+                            Text("years old")
+                                .font(.bodyText(14, weight: .bold))
+                                .foregroundStyle(.white.opacity(0.85))
                         }
-                        .padding(.top, 8)
 
-                        Spacer()
-                        Mascot(state: .idle, size: 110)
+                        // − | slider | +
+                        HStack(spacing: 12) {
+                            AgeStepButton(symbol: "minus", enabled: age > 4) {
+                                stepAge(by: -1)
+                            }
+                            AgeSliderTrack(age: $age)
+                                .frame(height: 44)
+                            AgeStepButton(symbol: "plus", enabled: age < 12) {
+                                stepAge(by: 1)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 24)
                     }
+                    .padding(.top, 28)
                 }
-                .frame(maxWidth: .infinity, minHeight: 320)
-                .padding(.horizontal, 24)
-                .padding(.top, 14)
-                .offset(y: appeared ? 0 : 16)
-                .opacity(appeared ? 1 : 0)
+                .frame(maxWidth: .infinity, minHeight: 280)
+                .padding(.horizontal, 24).padding(.top, 14)
+                .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: appeared)
 
                 Spacer()
 
-                CTAButton(label: "Continue", variant: .ink, action: { onNext(ages[selectedIndex]) })
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 28)
-                    .offset(y: appeared ? 0 : 16)
-                    .opacity(appeared ? 1 : 0)
+                CTAButton(label: "Continue", variant: .ink, action: { onNext(age) })
+                    .padding(.horizontal, 24).padding(.bottom, 28)
+                    .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
                     .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.15), value: appeared)
             }
             .scrollableWhenCompact()
         }
-        .onAppear {
-            withAnimation { appeared = true }
-        }
-        .gesture(
-            DragGesture()
-                .onEnded { value in
-                    if value.translation.width > 50 {
-                        triggerSwipeHaptic()
-                        onBack()
-                    }
-                }
-        )
+        .onAppear { withAnimation { appeared = true } }
+        .gesture(DragGesture().onEnded { v in
+            if v.translation.width > 50 { triggerSwipeHaptic(); onBack() }
+        })
     }
 }
 

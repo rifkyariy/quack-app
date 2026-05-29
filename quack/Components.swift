@@ -21,6 +21,34 @@ struct Eyebrow: View {
     }
 }
 
+// MARK: - LogoType
+struct LogoType: View {
+    var body: some View {
+        Image("duck-logotype")
+            .resizable()
+            .scaledToFit()
+            .accessibilityLabel("Quack logo")
+    }
+}
+
+#Preview("LogoType") {
+    VStack(spacing: 32) {
+        ZStack {
+            Color.quackOrange.ignoresSafeArea()
+            LogoType()
+                .frame(maxWidth: 260)
+        }
+        .frame(height: 200)
+        
+        ZStack {
+            Color.cream.ignoresSafeArea()
+            LogoType()
+                .frame(maxWidth: 200)
+        }
+        .frame(height: 150)
+    }
+}
+
 // MARK: - Sparkles
 private let sparklePositions: [(top: CGFloat, left: CGFloat, size: CGFloat, rot: Double)] = [
     (0.08, 0.12, 14, 12),  (0.18, 0.78, 22, -18),
@@ -531,6 +559,35 @@ private struct TabBarPreviewWrapper: View {
     VStack {
         Spacer()
         TabBarPreviewWrapper()
+    }
+}
+
+// MARK: - PulsingBorderEffect
+struct PulsingBorderEffect: ViewModifier {
+    @State private var pulse = false
+
+    func body(content: Content) -> some View {
+        TimelineView(.animation) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
+            let progress = (t.truncatingRemainder(dividingBy: 1.5)) / 1.5
+            let scale = 0.95 + (sin(progress * .pi * 2) + 1) / 4 * 0.1
+            let opacity = 0.3 + (sin(progress * .pi * 2) + 1) / 2 * 0.3
+
+            content
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(
+                            style: StrokeStyle(
+                                lineWidth: 2,
+                                lineCap: .round,
+                                lineJoin: .round,
+                                dash: [4, 4]
+                            )
+                        )
+                        .foregroundStyle(Color.quackOrange.opacity(opacity))
+                        .scaleEffect(scale)
+                )
+        }
     }
 }
 

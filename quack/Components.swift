@@ -672,7 +672,9 @@ struct StickerTile: View {
             .aspectRatio(1, contentMode: .fit)
             .stickerEffect()
             .modifier(LoopingStickerMotionEffect())
-            .modifier(locked ? AnyView(PulsingBorderEffect()) : AnyView(EmptyView()))
+            .if(locked) { view in
+                view.modifier(PulsingBorderEffect())
+            }
             .cardShadow()
             .scaleEffect(appeared ? 1 : 0.05)
             .opacity(appeared ? 1 : 0)
@@ -788,5 +790,20 @@ struct WaveBar: View {
     ZStack {
         Color.mint.ignoresSafeArea()
         Confetti(count: 30)
+    }
+}
+
+// MARK: - ViewBuilder Helpers
+extension View {
+    @ViewBuilder
+    func `if`<ModifiedContent: View>(
+        _ condition: Bool,
+        apply modifier: (Self) -> ModifiedContent
+    ) -> some View {
+        if condition {
+            modifier(self)
+        } else {
+            self
+        }
     }
 }

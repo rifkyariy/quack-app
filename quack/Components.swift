@@ -627,7 +627,7 @@ struct StickerTile: View {
         } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: 22)
-                    .fill(locked ? item.tone.bg : item.tone.bg)
+                    .fill(item.tone.bg)
 
                 if !locked {
                     GrainOverlay()

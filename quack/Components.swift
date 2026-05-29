@@ -672,7 +672,7 @@ struct StickerTile: View {
             .aspectRatio(1, contentMode: .fit)
             .stickerEffect()
             .modifier(LoopingStickerMotionEffect())
-            .modifier(PulsingBorderEffect())
+            .modifier(locked ? AnyView(PulsingBorderEffect()) : AnyView(EmptyView()))
             .cardShadow()
             .scaleEffect(appeared ? 1 : 0.05)
             .opacity(appeared ? 1 : 0)

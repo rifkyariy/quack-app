@@ -74,6 +74,7 @@ struct OnboardingFlow: View {
                     .id(step)
                     .transition(asymmetricTransition)
                 }
+                .background(Color.cream.ignoresSafeArea())
             case .gender:
                 VStack(spacing: 0) {
                     progressBar
@@ -91,6 +92,7 @@ struct OnboardingFlow: View {
                     .id(step)
                     .transition(asymmetricTransition)
                 }
+                .background(Color.cream.ignoresSafeArea())
             case .age:
                 VStack(spacing: 0) {
                     progressBar
@@ -108,6 +110,7 @@ struct OnboardingFlow: View {
                     .id(step)
                     .transition(asymmetricTransition)
                 }
+                .background(Color.cream.ignoresSafeArea())
             case .intro:
                 VStack(spacing: 0) {
                     progressBar
@@ -122,6 +125,7 @@ struct OnboardingFlow: View {
                     .id(step)
                     .transition(asymmetricTransition)
                 }
+                .background(Color.cream.ignoresSafeArea())
             case .setup:
                 SetupView(onNext: onComplete)
                     .id(step)

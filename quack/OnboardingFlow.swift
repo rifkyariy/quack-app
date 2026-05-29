@@ -109,9 +109,7 @@ struct OnboardingFlow: View {
                     progressBar
 
                     ZStack {
-                        // TODO: Replace with SetupView(onNext: onComplete) in Task 5
-                        Color.cream.ignoresSafeArea()
-                        CTAButton(label: "Setup", variant: .ink, action: onComplete)
+                        SetupView(onNext: onComplete)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .id(step)

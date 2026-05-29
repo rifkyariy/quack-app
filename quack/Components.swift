@@ -570,7 +570,7 @@ struct PulsingBorderEffect: ViewModifier {
         TimelineView(.animation) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             let progress = (t.truncatingRemainder(dividingBy: 1.5)) / 1.5
-            let scale = 0.95 + (sin(progress * .pi * 2) + 1) / 4 * 0.1
+            let scale = 0.95 + (sin(progress * .pi * 2) + 1) / 2 * 0.1
             let opacity = 0.3 + (sin(progress * .pi * 2) + 1) / 2 * 0.3
 
             content

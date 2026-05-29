@@ -54,6 +54,12 @@ let CATEGORIES: [Category] = [
     Category(id: "family",    label: "Family",    tone: .rose),
 ]
 
+// MARK: - Gender
+enum Gender: String, Codable {
+    case boy = "boy"
+    case girl = "girl"
+}
+
 // MARK: - TodayMission
 struct TodayMission {
     var id: String
@@ -82,6 +88,10 @@ final class AppState {
     }
     var age: Int {
         didSet { UserDefaults.standard.set(age, forKey: "quack.age") }
+    }
+    var gender: Gender {
+        get { Gender(rawValue: UserDefaults.standard.string(forKey: "quack.gender") ?? "") ?? .boy }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: "quack.gender") }
     }
     var streak: Int {
         didSet { UserDefaults.standard.set(streak, forKey: "quack.streak") }

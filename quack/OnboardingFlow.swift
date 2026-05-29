@@ -12,13 +12,13 @@ struct OnboardingFlow: View {
     let onComplete: () -> Void
     @Environment(AppState.self) private var appState
 
-    enum Step: Int { case splash = 0, name = 1, age = 2, intro = 3, setup = 4 }
+    enum Step: Int { case splash = 0, name = 1, gender = 2, age = 3, intro = 4, setup = 5 }
     @State private var step: Step = .splash
     @State private var slideDirection: CGFloat = 1  // 1 = forward, -1 = back
     @State private var flowVisible: Bool = false    // For entry animation
 
     private func advance() {
-        if step.rawValue < 4 {
+        if step.rawValue < 5 {
             step = Step(rawValue: step.rawValue + 1) ?? .setup
         }
     }
@@ -30,7 +30,7 @@ struct OnboardingFlow: View {
     }
 
     private var progressBar: some View {
-        let progressIdx = step.rawValue - 1  // name=0, age=1, intro=2, setup=3
+        let progressIdx = step.rawValue - 1  // name=0, gender=1, age=2, intro=3
         return HStack(spacing: 8) {
             ForEach(0..<4, id: \.self) { idx in
                 Capsule()
@@ -60,28 +60,44 @@ struct OnboardingFlow: View {
             case .name:
                 VStack(spacing: 0) {
                     progressBar
-
                     ZStack {
                         NameView(
                             initial: appState.name,
                             onBack: { withAnimation { step = .splash } },
                             onNext: { name in
                                 appState.name = name
+                                withAnimation { step = .gender }
+                            }
+                        )
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .id(step)
+                    .transition(asymmetricTransition)
+                }
+            case .gender:
+                VStack(spacing: 0) {
+                    progressBar
+                    ZStack {
+                        GenderView(
+                            initial: appState.gender,
+                            onBack: { withAnimation { step = .name } },
+                            onNext: { gender in
+                                appState.gender = gender
                                 withAnimation { step = .age }
                             }
                         )
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .id(step)
+                    .transition(asymmetricTransition)
                 }
             case .age:
                 VStack(spacing: 0) {
                     progressBar
-
                     ZStack {
                         AgeView(
                             initial: appState.age,
-                            onBack: { withAnimation { step = .name } },
+                            onBack: { withAnimation { step = .gender } },
                             onNext: { age in
                                 appState.age = age
                                 withAnimation { step = .intro }
@@ -90,31 +106,26 @@ struct OnboardingFlow: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .id(step)
+                    .transition(asymmetricTransition)
                 }
             case .intro:
                 VStack(spacing: 0) {
                     progressBar
-
                     ZStack {
                         IntroView(
                             name: appState.name,
                             onBack: { withAnimation { step = .age } },
-                            onNext: onComplete
+                            onNext: { withAnimation { step = .setup } }
                         )
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .id(step)
+                    .transition(asymmetricTransition)
                 }
             case .setup:
-                VStack(spacing: 0) {
-                    progressBar
-
-                    ZStack {
-                        SetupView(onNext: onComplete)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                SetupView(onNext: onComplete)
                     .id(step)
-                }
+                    .transition(asymmetricTransition)
             }
         }
         .offset(y: flowVisible ? 0 : 48)
@@ -583,6 +594,133 @@ struct AgeView: View {
 #Preview("Age") {
     AgeView(initial: 8, onBack: {}, onNext: { _ in })
         .environment(AppState())
+}
+
+// MARK: - GenderView
+struct GenderView: View {
+    let initial: Gender
+    let onBack: () -> Void
+    let onNext: (Gender) -> Void
+
+    @State private var selected: Gender
+    @State private var appeared = false
+
+    init(initial: Gender, onBack: @escaping () -> Void, onNext: @escaping (Gender) -> Void) {
+        self.initial = initial
+        self.onBack = onBack
+        self.onNext = onNext
+        _selected = State(initialValue: initial)
+    }
+
+    var body: some View {
+        ZStack {
+            Color.cream.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack {
+                    BackBtn(action: onBack)
+                    Spacer()
+                }
+                .padding(.horizontal, 24).padding(.top, 16)
+                .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Eyebrow(text: "Step 2 of 4", flank: false, size: 11)
+                    Text("Who are you?")
+                        .font(.display(28, weight: .heavy))
+                        .foregroundStyle(Color.ink)
+                    Text("Q will use this to personalise your experience")
+                        .font(.bodyText(13))
+                        .foregroundStyle(Color.inkMuted)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24).padding(.top, 14)
+                .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.05), value: appeared)
+
+                HStack(spacing: 14) {
+                    GenderTile(
+                        label: "Boy",
+                        icon: "figure.stand",
+                        color: Color.cobalt,
+                        isSelected: selected == .boy
+                    ) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            selected = .boy
+                        }
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    }
+
+                    GenderTile(
+                        label: "Girl",
+                        icon: "figure.stand.dress",
+                        color: Color.rose,
+                        isSelected: selected == .girl
+                    ) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            selected = .girl
+                        }
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    }
+                }
+                .padding(.horizontal, 24).padding(.top, 24)
+                .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: appeared)
+
+                Spacer()
+
+                CTAButton(label: "Continue", variant: .ink, action: { onNext(selected) })
+                    .padding(.horizontal, 24).padding(.bottom, 28)
+                    .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.15), value: appeared)
+            }
+        }
+        .onAppear { withAnimation { appeared = true } }
+        .gesture(DragGesture().onEnded { v in
+            if v.translation.width > 50 { triggerSwipeHaptic(); onBack() }
+        })
+    }
+}
+
+// MARK: - GenderTile
+private struct GenderTile: View {
+    let label: String
+    let icon: String
+    let color: Color
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? color : color.opacity(0.12))
+                        .frame(width: 72, height: 72)
+                    Image(systemName: icon)
+                        .font(.system(size: 32, weight: .semibold))
+                        .foregroundStyle(isSelected ? .white : color.opacity(0.8))
+                }
+                Text(label)
+                    .font(.display(17, weight: .heavy))
+                    .foregroundStyle(isSelected ? Color.ink : Color.inkMuted)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 28)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color.paper)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(isSelected ? color : Color.inkFaint, lineWidth: isSelected ? 2 : 1)
+                    )
+            )
+            .scaleEffect(isSelected ? 1.02 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
+        }
+        .buttonStyle(TapPress())
+    }
 }
 
 // MARK: - IntroView

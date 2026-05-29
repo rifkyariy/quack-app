@@ -243,18 +243,23 @@ private struct SetupStepRow: View {
 }
 
 private struct PrivacyCard: View {
-    private let items: [(emoji: String, label: String)] = [
-        ("🔒", "Privacy protected"),
-        ("☁️", "No cloud sync"),
-        ("👁", "Never tracked"),
+    private struct Item {
+        let icon: String
+        let label: String
+    }
+    private let items: [Item] = [
+        Item(icon: "lock.fill",         label: "Privacy protected"),
+        Item(icon: "cloud.slash.fill",  label: "No cloud sync"),
+        Item(icon: "eye.slash.fill",    label: "Never tracked"),
     ]
 
     var body: some View {
         HStack(spacing: 0) {
             ForEach(items.indices, id: \.self) { i in
                 HStack(spacing: 5) {
-                    Text(items[i].emoji)
-                        .font(.system(size: 13))
+                    Image(systemName: items[i].icon)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.75))
                     Text(items[i].label)
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white.opacity(0.9))

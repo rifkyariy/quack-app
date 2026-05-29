@@ -104,6 +104,8 @@ struct OnboardingFlow: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .id(step)
                 }
+            case .setup:
+                EmptyView()
             }
         }
         .offset(y: flowVisible ? 0 : 48)
@@ -210,6 +212,7 @@ struct NameView: View {
     let onNext: (String) -> Void
 
     @State private var name: String
+    @State private var appeared = false
     @FocusState private var focused: Bool
 
     init(initial: String, onBack: @escaping () -> Void, onNext: @escaping (String) -> Void) {
@@ -248,6 +251,9 @@ struct NameView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
+                .offset(y: appeared ? 0 : 16)
+                .opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
 
                 VStack(alignment: .leading, spacing: 14) {
                     Eyebrow(text: "Agent setup", flank: false, size: 11)
@@ -262,6 +268,9 @@ struct NameView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24)
                 .padding(.top, 24)
+                .offset(y: appeared ? 0 : 16)
+                .opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.05), value: appeared)
 
                 Spacer(minLength: 16)
 
@@ -329,6 +338,9 @@ struct NameView: View {
                     .frame(minHeight: 260)
                 }
                 .padding(.horizontal, 24)
+                .offset(y: appeared ? 0 : 16)
+                .opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: appeared)
 
                 Spacer(minLength: 12)
 
@@ -344,10 +356,16 @@ struct NameView: View {
                 )
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
+                .offset(y: appeared ? 0 : 16)
+                .opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.15), value: appeared)
             }
             .scrollableWhenCompact()
         }
-        .onAppear { focused = true }
+        .onAppear {
+            focused = true
+            appeared = true
+        }
         .gesture(
             DragGesture()
                 .onEnded { value in
@@ -381,6 +399,7 @@ struct AgeView: View {
     private let itemW: CGFloat = 72
 
     @State private var selectedIndex: Int
+    @State private var appeared = false
     @GestureState private var dragOffset: CGFloat = 0
 
     init(initial: Int, onBack: @escaping () -> Void, onNext: @escaping (Int) -> Void) {
@@ -405,6 +424,9 @@ struct AgeView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
+                .offset(y: appeared ? 0 : 16)
+                .opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Eyebrow(text: "Step 2 of 3", flank: false, size: 11)
@@ -418,6 +440,9 @@ struct AgeView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24)
                 .padding(.top, 14)
+                .offset(y: appeared ? 0 : 16)
+                .opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.05), value: appeared)
 
                 ZStack(alignment: .bottom) {
                     RoundedRectangle(cornerRadius: 28)
@@ -510,15 +535,22 @@ struct AgeView: View {
                 .frame(maxWidth: .infinity, minHeight: 320)
                 .padding(.horizontal, 24)
                 .padding(.top, 14)
+                .offset(y: appeared ? 0 : 16)
+                .opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: appeared)
 
                 Spacer()
 
                 CTAButton(label: "Continue", variant: .ink, action: { onNext(ages[selectedIndex]) })
                     .padding(.horizontal, 24)
                     .padding(.bottom, 28)
+                    .offset(y: appeared ? 0 : 16)
+                    .opacity(appeared ? 1 : 0)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.15), value: appeared)
             }
             .scrollableWhenCompact()
         }
+        .onAppear { appeared = true }
         .gesture(
             DragGesture()
                 .onEnded { value in
@@ -542,6 +574,8 @@ struct IntroView: View {
     let onBack: () -> Void
     let onNext: () -> Void
 
+    @State private var appeared = false
+
     private let tips: [(icon: QuackIconName, title: String, body: String, color: Color)] = [
         (.camera, "Point at things",   "Show Q an apple. Q tells you what it is in Mandarin.", .quackOrange),
         (.mic,    "Say it back",       "Repeat the word. Q listens and tells you if it sounds right.", .cobalt),
@@ -559,6 +593,9 @@ struct IntroView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
+                .offset(y: appeared ? 0 : 16)
+                .opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Eyebrow(text: "Step 3 of 3", flank: false, size: 11)
@@ -572,6 +609,9 @@ struct IntroView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
+                .offset(y: appeared ? 0 : 16)
+                .opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.05), value: appeared)
 
                 VStack(spacing: 12) {
                     ForEach(tips.indices, id: \.self) { i in
@@ -602,15 +642,22 @@ struct IntroView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 20)
+                .offset(y: appeared ? 0 : 16)
+                .opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: appeared)
 
                 Spacer()
 
                 CTAButton(label: "Start my first mission", variant: .orange, action: onNext)
                     .padding(.horizontal, 24)
                     .padding(.bottom, 32)
+                    .offset(y: appeared ? 0 : 16)
+                    .opacity(appeared ? 1 : 0)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.15), value: appeared)
             }
             .scrollableWhenCompact()
         }
+        .onAppear { appeared = true }
         .gesture(
             DragGesture()
                 .onEnded { value in

@@ -564,8 +564,6 @@ private struct TabBarPreviewWrapper: View {
 
 // MARK: - PulsingBorderEffect
 struct PulsingBorderEffect: ViewModifier {
-    @State private var pulse = false
-
     func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate

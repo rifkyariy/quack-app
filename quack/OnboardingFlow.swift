@@ -265,7 +265,7 @@ struct NameView: View {
 
                     Spacer()
 
-                    Text("1 / 3")
+                    Text("Step 1 of 4")
                         .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.inkMuted)
                 }
@@ -519,7 +519,7 @@ struct AgeView: View {
                 .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Eyebrow(text: "Step 2 of 3", flank: false, size: 11)
+                    Eyebrow(text: "Step 3 of 4", flank: false, size: 11)
                     Text("How old are you?")
                         .font(.display(28, weight: .heavy))
                         .foregroundStyle(Color.ink)
@@ -720,6 +720,8 @@ private struct GenderTile: View {
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
         }
         .buttonStyle(TapPress())
+        .accessibilityLabel(label)
+        .accessibilityHint("Gender selection. Select \(label)")
     }
 }
 
@@ -753,7 +755,7 @@ struct IntroView: View {
                 .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Eyebrow(text: "Step 3 of 3", flank: false, size: 11)
+                    Eyebrow(text: "Step 4 of 4", flank: false, size: 11)
                     Text("How it works, \(name)")
                         .font(.display(30, weight: .heavy))
                         .foregroundStyle(Color.ink)

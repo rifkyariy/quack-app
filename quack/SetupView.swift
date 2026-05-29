@@ -3,13 +3,17 @@ import AVFoundation
 
 struct SetupView: View {
     let onNext: () -> Void
-    @Environment(AppState.self) private var appState
 
     @State private var appeared = false
     @State private var cameraPermissionState: PermissionState = .waiting
     @State private var micPermissionState: PermissionState = .waiting
 
-    enum PermissionState { case waiting, active, done }
+    enum PermissionState { case waiting, active, done, denied }
+
+    private let animationSpring = Animation.spring(response: 0.5, dampingFraction: 0.7)
+    private let cameraStepDelay: CGFloat = 0.06
+    private let micStepDelay: CGFloat = 0.12
+    private let buttonDelay: CGFloat = 0.2
 
     var body: some View {
         ZStack {
@@ -30,7 +34,7 @@ struct SetupView: View {
                 .padding(.top, 24)
                 .offset(y: appeared ? 0 : 16)
                 .opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
+                .animation(animationSpring, value: appeared)
 
                 Spacer(minLength: 20)
 
@@ -44,7 +48,7 @@ struct SetupView: View {
                     )
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 20)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.06), value: appeared)
+                    .animation(animationSpring.delay(cameraStepDelay), value: appeared)
 
                     SetupStepRow(
                         icon: "mic.fill",
@@ -54,7 +58,7 @@ struct SetupView: View {
                     )
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 20)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.12), value: appeared)
+                    .animation(animationSpring.delay(micStepDelay), value: appeared)
                 }
                 .padding(.horizontal, 24)
 
@@ -71,7 +75,7 @@ struct SetupView: View {
                 .padding(.bottom, 32)
                 .offset(y: appeared ? 0 : 30)
                 .opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: appeared)
+                .animation(animationSpring.delay(buttonDelay), value: appeared)
             }
         }
         .onAppear {
@@ -84,15 +88,15 @@ struct SetupView: View {
         // Camera
         withAnimation { cameraPermissionState = .active }
         let cameraGranted = await requestCameraPermission()
-        if cameraGranted {
-            withAnimation { cameraPermissionState = .done }
+        withAnimation {
+            cameraPermissionState = cameraGranted ? .done : .denied
         }
 
         // Microphone
         withAnimation { micPermissionState = .active }
         let micGranted = await requestMicrophonePermission()
-        if micGranted {
-            withAnimation { micPermissionState = .done }
+        withAnimation {
+            micPermissionState = micGranted ? .done : .denied
         }
     }
 
@@ -129,6 +133,10 @@ private struct SetupStepRow: View {
                 } else if state == .active {
                     ProgressView()
                         .tint(.white.opacity(0.7))
+                } else if state == .denied {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.white)
                 } else {
                     Image(systemName: icon)
                         .font(.system(size: 18, weight: .semibold))
@@ -163,6 +171,7 @@ private struct SetupStepRow: View {
         case .waiting: return .white.opacity(0.15)
         case .active: return .white.opacity(0.2)
         case .done: return .white
+        case .denied: return .red.opacity(0.8)
         }
     }
 }

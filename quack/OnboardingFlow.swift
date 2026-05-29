@@ -105,7 +105,17 @@ struct OnboardingFlow: View {
                     .id(step)
                 }
             case .setup:
-                EmptyView()
+                VStack(spacing: 0) {
+                    progressBar
+
+                    ZStack {
+                        // TODO: Replace with SetupView(onNext: onComplete) in Task 5
+                        Color.cream.ignoresSafeArea()
+                        CTAButton(label: "Setup", variant: .ink, action: onComplete)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .id(step)
+                }
             }
         }
         .offset(y: flowVisible ? 0 : 48)
@@ -363,19 +373,13 @@ struct NameView: View {
             .scrollableWhenCompact()
         }
         .onAppear {
-            focused = true
-            appeared = true
+            withAnimation {
+                appeared = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                withAnimation { focused = true }
+            }
         }
-        .gesture(
-            DragGesture()
-                .onEnded { value in
-                    if value.translation.width > 50 {
-                        triggerSwipeHaptic()
-                        focused = false
-                        onBack()
-                    }
-                }
-        )
     }
 }
 
@@ -550,7 +554,9 @@ struct AgeView: View {
             }
             .scrollableWhenCompact()
         }
-        .onAppear { appeared = true }
+        .onAppear {
+            withAnimation { appeared = true }
+        }
         .gesture(
             DragGesture()
                 .onEnded { value in
@@ -657,7 +663,9 @@ struct IntroView: View {
             }
             .scrollableWhenCompact()
         }
-        .onAppear { appeared = true }
+        .onAppear {
+            withAnimation { appeared = true }
+        }
         .gesture(
             DragGesture()
                 .onEnded { value in

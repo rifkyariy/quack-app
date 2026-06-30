@@ -172,6 +172,25 @@ final class CameraCapture: NSObject {
         sessionQueue.async { if session.isRunning { session.stopRunning() } }
     }
 
+    /// Focuses the camera on a point given in the preview layer's coordinate space.
+    /// Silently ignored on devices that don't support interest-point focus.
+    func focus(at layerPoint: CGPoint) {
+        guard let device = currentInput?.device else { return }
+        let devicePoint = previewLayer.captureDevicePointConverted(fromLayerPoint: layerPoint)
+        sessionQueue.async {
+            guard (try? device.lockForConfiguration()) != nil else { return }
+            if device.isFocusPointOfInterestSupported {
+                device.focusPointOfInterest = devicePoint
+                device.focusMode = .autoFocus
+            }
+            if device.isExposurePointOfInterestSupported {
+                device.exposurePointOfInterest = devicePoint
+                device.exposureMode = .autoExpose
+            }
+            device.unlockForConfiguration()
+        }
+    }
+
     /// Captures one still photo and returns it as a downscaled JPEG.
     func capturePhoto() async throws -> Data {
         guard configured else { throw CaptureError.unavailable }
@@ -238,20 +257,40 @@ extension CameraCapture: AVCapturePhotoCaptureDelegate {
 }
 
 /// SwiftUI host for a `CameraCapture`-owned `AVCaptureVideoPreviewLayer`.
+/// Tap anywhere to focus — an animated square ring appears at the tap point.
 struct CameraPreview: UIViewRepresentable {
     let previewLayer: AVCaptureVideoPreviewLayer
+    var camera: CameraCapture? = nil  // optional; nil = no tap-to-focus
 
     func makeUIView(context: Context) -> PreviewHostView {
         let view = PreviewHostView()
         view.attach(previewLayer)
+        if let cam = camera {
+            let tap = UITapGestureRecognizer(target: context.coordinator,
+                                             action: #selector(Coordinator.handleTap(_:)))
+            view.addGestureRecognizer(tap)
+            context.coordinator.camera = cam
+            context.coordinator.hostView = view
+        }
         return view
     }
 
     func updateUIView(_ uiView: PreviewHostView, context: Context) {}
+    func makeCoordinator() -> Coordinator { Coordinator() }
 
-    /// Plain UIView that keeps the externally-owned preview layer sized to its
-    /// bounds. (The layer cannot be the view's backing `layerClass` because it
-    /// is owned by `CameraCapture`, not the view.)
+    final class Coordinator: NSObject {
+        var camera: CameraCapture?
+        weak var hostView: PreviewHostView?
+
+        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+            guard let view = hostView else { return }
+            let point = gesture.location(in: view)
+            view.showFocusRing(at: point)
+            let cam = camera
+            Task { @MainActor in cam?.focus(at: point) }
+        }
+    }
+
     final class PreviewHostView: UIView {
         private weak var previewLayer: AVCaptureVideoPreviewLayer?
 
@@ -263,6 +302,30 @@ struct CameraPreview: UIViewRepresentable {
         override func layoutSubviews() {
             super.layoutSubviews()
             previewLayer?.frame = bounds
+        }
+
+        func showFocusRing(at point: CGPoint) {
+            let size: CGFloat = 72
+            let ring = UIView(frame: CGRect(x: point.x - size/2, y: point.y - size/2,
+                                            width: size, height: size))
+            ring.layer.borderColor = UIColor(Color.quackOrange).cgColor
+            ring.layer.borderWidth = 2
+            ring.layer.cornerRadius = 6
+            ring.alpha = 0
+            addSubview(ring)
+
+            UIView.animateKeyframes(withDuration: 0.7, delay: 0, options: []) {
+                UIView.addKeyframe(withRelativeStartTime: 0, relativeDuration: 0.2) {
+                    ring.alpha = 1
+                    ring.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+                }
+                UIView.addKeyframe(withRelativeStartTime: 0.2, relativeDuration: 0.5) {
+                    ring.alpha = 1
+                }
+                UIView.addKeyframe(withRelativeStartTime: 0.7, relativeDuration: 0.3) {
+                    ring.alpha = 0
+                }
+            } completion: { _ in ring.removeFromSuperview() }
         }
     }
 }

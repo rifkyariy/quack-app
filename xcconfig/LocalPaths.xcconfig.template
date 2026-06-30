@@ -1,0 +1,15 @@
+// LocalPaths.xcconfig — machine-specific resource paths
+//
+// Copy this file to xcconfig/LocalPaths.xcconfig (gitignored) and
+// adjust the paths for your local setup.  Xcode reads the .xcconfig
+// at build time, so changing values here is all you need to do.
+//
+// Default values assume the standard repo layout:
+//   ~/Documents/Projects/quack-app/  ← this project
+//   ~/Documents/Projects/Swift/litertrepo/  ← LiteRT-LM clone
+
+// Folder containing gemma-4-E2B-it.litertlm and chat_template.jinja
+LITERT_MODEL_DIR = $(SRCROOT)/litertllm/gemma-e2b
+
+// ios_arm64 prebuilt folder inside the LiteRT-LM repo clone
+LITERT_PREBUILT_DIR = $(SRCROOT)/../Swift/litertrepo/prebuilt/ios_arm64

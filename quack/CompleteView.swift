@@ -7,10 +7,12 @@ struct CompleteView: View {
     @Environment(AppState.self) private var appState
     @State private var starAppeared = [false, false, false]
 
+    private var stars: Int { appState.lastMissionStars }
+
     var body: some View {
         ZStack {
             Color.mint.ignoresSafeArea()
-            Confetti(count: 30)
+            Confetti(count: stars == 3 ? 40 : 20)
             Sparkles(count: 8, animate: true)
 
             VStack(spacing: 0) {
@@ -21,19 +23,22 @@ struct CompleteView: View {
                 Eyebrow(text: "Mission complete", color: .mintDeep)
                     .padding(.top, 16)
 
-                Text("Nice one, \(appState.name)!")
+                Text(stars == 3 ? "Amazing, \(appState.name)!" : stars == 2 ? "Well done, \(appState.name)!" : "Keep going, \(appState.name)!")
                     .font(.display(28, weight: .heavy))
                     .foregroundStyle(Color.ink)
                     .padding(.top, 8)
 
-                // Stars
+                // Stars (1–3 based on performance)
                 HStack(spacing: 16) {
                     ForEach(0..<3, id: \.self) { i in
+                        let earned = i < stars
                         Circle()
-                            .fill(Color.quackYellow)
+                            .fill(earned ? Color.quackYellow : Color.inkFaint)
                             .frame(width: 52, height: 52)
                             .overlay(
-                                QuackIcon(name: .star, size: 28, color: .white)
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 22, weight: .bold))
+                                    .foregroundStyle(earned ? Color.paper : Color.inkMuted.opacity(0.4))
                             )
                             .cardShadow()
                             .scaleEffect(starAppeared[i] ? 1 : 0.05)

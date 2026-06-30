@@ -14,7 +14,7 @@ struct HomeView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        MainTabChrome(active: $activeTab) {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     greetingHeader
@@ -41,80 +41,175 @@ struct HomeView: View {
                 }
             }
             .background(Color.cream)
-
-            TabBar(active: $activeTab)
         }
-        .ignoresSafeArea(edges: .bottom)
         .sheet(isPresented: $showProfile) {
             ProfileView()
         }
     }
 
+    // MARK: - Level helpers
+    private var xp: Int { appState.learned.count * 10 + appState.streak * 5 }
+    private var levelNum: Int {
+        switch xp { case 0..<30: 1; case 30..<80: 2; case 80..<160: 3; case 160..<280: 4; default: 5 }
+    }
+    private static let levelNames = ["", "Seedling", "Sprout", "Explorer", "Collector", "Champion"]
+    private var levelName: String { Self.levelNames[levelNum] }
+
     // MARK: - Greeting header
     private var greetingHeader: some View {
-        HStack(spacing: 12) {
-            Button { showProfile = true } label: {
-                Text(String((appState.name.isEmpty ? "A" : appState.name).prefix(1)).uppercased())
-                    .font(.display(22, weight: .heavy))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .background(Color.quackOrange)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                    .cardShadow()
-            }
-            .buttonStyle(TapPress())
+        VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                Button { showProfile = true } label: {
+                    ZStack(alignment: .bottomTrailing) {
+                        Image(appState.codename)
+                            .resizable().scaledToFit()
+                            .frame(width: 48, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .cardShadow()
+                        Text("Lv.\(levelNum)")
+                            .font(.system(size: 8, weight: .black))
+                            .foregroundStyle(Color.paper)
+                            .padding(.horizontal, 4).padding(.vertical, 1)
+                            .background(Color.quackOrange)
+                            .clipShape(Capsule())
+                            .offset(x: 4, y: 4)
+                    }
+                }
+                .buttonStyle(TapPress())
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("WELCOME BACK")
-                    .font(.system(size: 11, weight: .heavy))
-                    .tracking(11 * 0.12)
-                    .foregroundStyle(Color.inkMuted)
-                Text("Hey, \(appState.name)")
-                    .font(.display(22, weight: .heavy))
-                    .foregroundStyle(Color.ink)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(levelName)
+                        .font(.bodyText(10, weight: .heavy))
+                        .foregroundStyle(Color.quackOrange)
+                        .tracking(0.5)
+                    Text("Hey, \(appState.name)!")
+                        .font(.display(22, weight: .heavy))
+                        .foregroundStyle(Color.ink)
+                }
+
+                Spacer()
+
+                // Streak badge
+                VStack(spacing: 2) {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.quackOrange)
+                        .symbolEffect(.pulse, isActive: appState.streak > 0)
+                    Text("\(appState.streak)")
+                        .font(.display(16, weight: .heavy))
+                        .foregroundStyle(Color.ink)
+                    Text("streak")
+                        .font(.bodyText(9)).foregroundStyle(Color.inkMuted)
+                }
+                .padding(.horizontal, 10).padding(.vertical, 8).quackCard()
             }
 
-            Spacer()
-
-            HStack(spacing: 6) {
-                QuackIcon(name: .fire, size: 16, color: .quackOrangeDeep, strokeWidth: 1.8)
-                Text("\(appState.streak)")
-                    .font(.display(16, weight: .heavy))
-                    .foregroundStyle(Color.ink)
+            // XP bar
+            GeometryReader { geo in
+                let xpBase = [0, 30, 80, 160, 280][max(0, levelNum - 1)]
+                let xpNext = [30, 80, 160, 280, 999][max(0, levelNum - 1)]
+                let pct = CGFloat(xp - xpBase) / CGFloat(max(xpNext - xpBase, 1))
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.inkFaint).frame(height: 6)
+                    Capsule()
+                        .fill(LinearGradient(colors: [Color.quackYellow, Color.quackOrange],
+                                             startPoint: .leading, endPoint: .trailing))
+                        .frame(width: geo.size.width * min(1, pct), height: 6)
+                        .animation(.easeOut(duration: 0.6), value: xp)
+                }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .quackCard()
+            .frame(height: 6)
         }
         .padding(.horizontal, 24)
         .padding(.top, 16)
     }
 
-    // MARK: - Daily ring card
-    private var dailyRingCard: some View {
-        HStack(spacing: 14) {
-            DailyRing(value: appState.dailyProgress, max: appState.dailyGoal)
+    // MARK: - Daily ring card (hidden when goal is already met)
+    @ViewBuilder private var dailyRingCard: some View {
+        if appState.dailyProgress < appState.dailyGoal {
+            HStack(spacing: 14) {
+                DailyRing(value: appState.dailyProgress, max: appState.dailyGoal)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(appState.dailyProgress) / \(appState.dailyGoal) stars today")
-                    .font(.display(18, weight: .heavy))
-                    .foregroundStyle(Color.ink)
-                Text(appState.dailyProgress >= appState.dailyGoal
-                     ? "Goal smashed! Keep going for bonus stickers."
-                     : "Finish your mission to hit today's goal.")
-                    .font(.bodyText(12))
-                    .foregroundStyle(Color.inkMuted)
-                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(appState.dailyProgress) / \(appState.dailyGoal) stars today")
+                        .font(.display(18, weight: .heavy))
+                        .foregroundStyle(Color.ink)
+                    Text("Finish your mission to hit today's goal.")
+                        .font(.bodyText(12))
+                        .foregroundStyle(Color.inkMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
+            .padding(14)
+            .quackCard()
+            .padding(.horizontal, 24)
+            .padding(.top, 14)
         }
-        .padding(14)
-        .quackCard()
-        .padding(.horizontal, 24)
-        .padding(.top, 14)
     }
 
     // MARK: - Today's mission hero card
-    private var missionHeroCard: some View {
+    @ViewBuilder private var missionHeroCard: some View {
+        if appState.dailyProgress >= appState.dailyGoal {
+            goalCompleteCard
+        } else {
+            missionActiveCard
+        }
+    }
+
+    private var goalCompleteCard: some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 28)
+                .fill(Color.mint)
+                .grain()
+                .popShadow()
+                .frame(maxWidth: .infinity, minHeight: 200)
+
+            Confetti(count: 20)
+            Sparkles(count: 6, color: .white, opacity: 0.5, animate: true)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Eyebrow(text: "Goal reached!", color: .mintDeep, flank: false)
+                    .padding(.top, 22).padding(.horizontal, 22)
+
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("You've done great today!")
+                            .font(.display(24, weight: .heavy))
+                            .foregroundStyle(Color.ink)
+                        Text("Check your achievements and see how far you've come.")
+                            .font(.bodyText(13))
+                            .foregroundStyle(Color.ink.opacity(0.75))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer()
+                    Mascot(state: .celebrating, size: 70)
+                        .padding(.top, -4)
+                }
+                .padding(.top, 8).padding(.horizontal, 22)
+
+                Button {
+                    activeTab = .parent
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("Go to Parent Summary")
+                            .font(.bodyText(14, weight: .heavy))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .bold))
+                    }
+                    .foregroundStyle(Color.mintDeep)
+                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .background(Color.paper.opacity(0.85))
+                    .clipShape(Capsule())
+                    .cardShadow()
+                }
+                .buttonStyle(TapPress())
+                .padding(.horizontal, 22).padding(.top, 14).padding(.bottom, 22)
+            }
+        }
+        .padding(.horizontal, 24).padding(.top, 14)
+    }
+
+    private var missionActiveCard: some View {
         Button { if let word = todayWord { onMission(.camera, word) } } label: {
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 28)

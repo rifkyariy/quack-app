@@ -9,9 +9,6 @@
 /* Begin PBXBuildFile section */
 		8516A4552FB7592F00F0348B /* Sticker in Frameworks */ = {isa = PBXBuildFile; productRef = 0F04323C24F449398B8E4B35 /* Sticker */; };
 		D110A001000000000000A003 /* LiteRTLM in Frameworks */ = {isa = PBXBuildFile; productRef = D110A001000000000000A002 /* LiteRTLM */; };
-		D110A001000000000000F801 /* gemma-4-E2B-it.litertlm in Resources */ = {isa = PBXBuildFile; fileRef = D110A001000000000000F901 /* gemma-4-E2B-it.litertlm */; };
-		D110A001000000000000F802 /* chat_template.jinja in Resources */ = {isa = PBXBuildFile; fileRef = D110A001000000000000F902 /* chat_template.jinja */; };
-		D110A001000000000000FF01 /* libGemmaModelConstraintProvider.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -31,27 +28,11 @@
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		D110A001000000000000FD01 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				D110A001000000000000FF01 /* libGemmaModelConstraintProvider.dylib in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
 		41AEEFE02FACFCED00AD4E6C /* quack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = quack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		41AEEFED2FACFCF000AD4E6C /* quackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = quackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		41AEEFF72FACFCF000AD4E6C /* quackUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = quackUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		D110A001000000000000F901 /* gemma-4-E2B-it.litertlm */ = {isa = PBXFileReference; lastKnownFileType = file; name = "gemma-4-E2B-it.litertlm"; path = "/Volumes/Data/Developments/apple/Swift/Spiku/Spiku/Resources/gemma-4-E2B-it.litertlm"; sourceTree = "<absolute>"; };
-		D110A001000000000000F902 /* chat_template.jinja */ = {isa = PBXFileReference; lastKnownFileType = text; name = chat_template.jinja; path = /Volumes/Data/Developments/apple/Swift/Spiku/Spiku/Resources/chat_template.jinja; sourceTree = "<absolute>"; };
-		D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libGemmaModelConstraintProvider.dylib; path = /Volumes/Data/Developments/apple/Swift/litertrepo/prebuilt/ios_arm64/libGemmaModelConstraintProvider.dylib; sourceTree = "<absolute>"; };
+		D110A003000000000000CF01 /* LocalPaths.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = LocalPaths.xcconfig; path = xcconfig/LocalPaths.xcconfig; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -105,7 +86,7 @@
 				41AEEFE22FACFCED00AD4E6C /* quack */,
 				41AEEFF02FACFCF000AD4E6C /* quackTests */,
 				41AEEFFA2FACFCF000AD4E6C /* quackUITests */,
-				D110A001000000000000FC01 /* Frameworks */,
+				D110A003000000000000CF01 /* LocalPaths.xcconfig */,
 				41AEEFE12FACFCED00AD4E6C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -120,16 +101,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		D110A001000000000000FC01 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				D110A001000000000000FE01 /* libGemmaModelConstraintProvider.dylib */,
-				D110A001000000000000F901 /* gemma-4-E2B-it.litertlm */,
-				D110A001000000000000F902 /* chat_template.jinja */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -140,7 +111,8 @@
 				41AEEFDC2FACFCED00AD4E6C /* Sources */,
 				41AEEFDD2FACFCED00AD4E6C /* Frameworks */,
 				41AEEFDE2FACFCED00AD4E6C /* Resources */,
-				D110A001000000000000FD01 /* Embed Frameworks */,
+				D110A003000000000000AC01 /* Copy LiteRT Model */,
+				D110A003000000000000AE01 /* Embed LiteRT Dylib */,
 			);
 			buildRules = (
 			);
@@ -257,8 +229,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D110A001000000000000F801 /* gemma-4-E2B-it.litertlm in Resources */,
-				D110A001000000000000F802 /* chat_template.jinja in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,6 +247,43 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D110A003000000000000AC01 /* Copy LiteRT Model */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(LITERT_MODEL_DIR)/gemma-4-E2B-it.litertlm",
+				"$(LITERT_MODEL_DIR)/chat_template.jinja",
+			);
+			name = "Copy LiteRT Model";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/gemma-4-E2B-it.litertlm",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/chat_template.jinja",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nDEST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\nfor FILE in \"gemma-4-E2B-it.litertlm\" \"chat_template.jinja\"; do\n    SRC=\"${LITERT_MODEL_DIR}/${FILE}\"\n    if [ ! -f \"$SRC\" ]; then\n        echo \"error: LiteRT resource not found: $SRC\"\n        echo \"hint: Set LITERT_MODEL_DIR in xcconfig/LocalPaths.xcconfig\"\n        exit 1\n    fi\n    cp \"$SRC\" \"${DEST}/${FILE}\"\ndone\n";
+		};
+		D110A003000000000000AE01 /* Embed LiteRT Dylib */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(LITERT_PREBUILT_DIR)/libGemmaModelConstraintProvider.dylib",
+			);
+			name = "Embed LiteRT Dylib";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/libGemmaModelConstraintProvider.dylib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nDYLIB_NAME=\"libGemmaModelConstraintProvider.dylib\"\nSRC=\"${LITERT_PREBUILT_DIR}/${DYLIB_NAME}\"\nDEST=\"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/${DYLIB_NAME}\"\nif [ ! -f \"$SRC\" ]; then\n    echo \"error: LiteRT dylib not found: $SRC\"\n    echo \"hint: Set LITERT_PREBUILT_DIR in xcconfig/LocalPaths.xcconfig\"\n    exit 1\nfi\nmkdir -p \"$(dirname \\\"$DEST\\\")\"\ncp \"$SRC\" \"$DEST\"\nif [ \"${CODE_SIGNING_REQUIRED}\" = \"YES\" ] && [ -n \"${EXPANDED_CODE_SIGN_IDENTITY}\" ]; then\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --preserve-metadata=identifier,entitlements \"${DEST}\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		41AEEFDC2FACFCED00AD4E6C /* Sources */ = {
@@ -439,14 +446,16 @@
 		};
 		41AEF0022FACFCF000AD4E6C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = D110A003000000000000CF01 /* LocalPaths.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = quack/quack.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 4JH6AF2L77;
+				DEVELOPMENT_TEAM = A642FFR346;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Quack uses the camera so the duck can see and recognize the objects you point at.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Quack uses the microphone to hear you say new words and give pronunciation feedback.";
@@ -459,6 +468,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				LITERT_MODEL_DIR = "$(SRCROOT)/litertllm/gemma-e2b";
+				LITERT_PREBUILT_DIR = "$(SRCROOT)/../Swift/litertrepo/prebuilt/ios_arm64";
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"-lc++",
@@ -467,7 +478,7 @@
 					"-framework",
 					AudioToolbox,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.satyaadhiyaksa.quack;
+				PRODUCT_BUNDLE_IDENTIFIER = MIT.quack;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -477,14 +488,16 @@
 		};
 		41AEF0032FACFCF000AD4E6C /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = D110A003000000000000CF01 /* LocalPaths.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = quack/quack.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 4JH6AF2L77;
+				DEVELOPMENT_TEAM = A642FFR346;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Quack uses the camera so the duck can see and recognize the objects you point at.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Quack uses the microphone to hear you say new words and give pronunciation feedback.";
@@ -497,6 +510,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				LITERT_MODEL_DIR = "$(SRCROOT)/litertllm/gemma-e2b";
+				LITERT_PREBUILT_DIR = "$(SRCROOT)/../Swift/litertrepo/prebuilt/ios_arm64";
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"-lc++",
@@ -505,7 +520,7 @@
 					"-framework",
 					AudioToolbox,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.satyaadhiyaksa.quack;
+				PRODUCT_BUNDLE_IDENTIFIER = MIT.quack;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

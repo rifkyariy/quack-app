@@ -162,22 +162,32 @@ final class QuackGemma {
     /// toward agreement (same reason scorePronunciation hides the target).
     func recognizeObject(image: Data, target: VocabItem) async throws -> VisionResult {
         let engine = try await engine()
-        // A fresh conversation gives this recognition a clean context.
         let conversation = try await engine.createConversation()
         let imagePath = try Self.writeTempImage(image)
         defer { try? FileManager.default.removeItem(atPath: imagePath) }
-        let prompt = """
+
+        // Family words can't be identified by appearance alone — a different prompt
+        // asks for the person's apparent relationship role instead of object type.
+        let isFamily = target.cat == "family"
+        let prompt = isFamily ? """
+        Look at this photo. Is there a person visible?
+        If yes, what family relationship role do they most likely represent?
+        Reply with exactly one word: mother, father, brother, sister, person, man, woman, boy, girl.
+        If no person is visible, reply with exactly: none
+        """ : """
         Look at this photo. What is the main object in it? \
         Answer with just one or two words in English, all lowercase, no \
         punctuation, no description, no sentence.
         If you cannot tell, respond with exactly: none
         Respond on a single line.
         """
+
         let response = try await conversation.sendMessage(
             Message(of: .imageFile(imagePath), .text(prompt))
         )
         let recognized = response.toString.trimmingCharacters(in: .whitespacesAndNewlines)
-        let matched = Self.objectMatches(recognized: recognized, target: target.en)
+        let matched = Self.objectMatches(recognized: recognized, target: target.en,
+                                         isFamily: isFamily)
         print("[QuackGemma] recognizeObject target=\(target.en) raw='\(recognized)' matched=\(matched)")
         return VisionResult(recognized: recognized, matched: matched)
     }
@@ -244,10 +254,24 @@ final class QuackGemma {
     /// "eggplant" — splitting on whitespace first keeps word boundaries
     /// intact. Lenient within a word (tolerates "a cat", "grapes" for
     /// "grape"). Returns false when the model signaled it could not tell.
-    static func objectMatches(recognized rawRecognized: String, target rawTarget: String) -> Bool {
+    // Words that indicate a person is visible — accepted for any family target.
+    private static let personWords: Set<String> =
+        ["person","man","woman","boy","girl","human","child","adult","lady","male","female","people"]
+
+    // Per-target synonyms so "woman" matches "mom", "man" matches "dad", etc.
+    private static let familySynonyms: [String: Set<String>] = [
+        "mom":    ["mother","woman","lady","female"],
+        "dad":    ["father","man","male"],
+        "mother": ["mom","woman","lady","female"],
+        "father": ["dad","man","male"],
+        "brother":["man","boy","male","sibling"],
+        "sister": ["woman","girl","female","sibling"],
+    ]
+
+    static func objectMatches(recognized rawRecognized: String, target rawTarget: String,
+                              isFamily: Bool = false) -> Bool {
         let target = normalize(rawTarget)
         guard !target.isEmpty else { return false }
-        // Reject explicit uncertainty before tokenizing.
         let lowerRaw = rawRecognized.lowercased()
         if lowerRaw.contains("none") || lowerRaw.contains("unknown")
             || lowerRaw.contains("not sure") || lowerRaw.contains("unclear") {
@@ -258,10 +282,21 @@ final class QuackGemma {
             .map { normalize(String($0)) }
             .filter { !$0.isEmpty }
         guard !tokens.isEmpty else { return false }
+
+        // Family targets: accept role words (mother/father/brother/sister)
+        // and generic person words (man/woman/person/boy/girl).
+        if isFamily {
+            let synonyms = familySynonyms[target] ?? []
+            for token in tokens {
+                if token == target { return true }
+                if synonyms.contains(token) { return true }
+                if personWords.contains(token) { return true }
+            }
+            return false
+        }
+
         for token in tokens {
             if token == target { return true }
-            // Fuzzy match within a word tolerates plurals and near-miss
-            // spellings ("grape"/"grapes"), but not unrelated compounds.
             let distance = levenshtein(token, target)
             let maxLen = max(token.count, target.count)
             if maxLen > 0, 1.0 - Double(distance) / Double(maxLen) >= 0.8 {
@@ -451,15 +486,123 @@ final class QuackGemma {
         return filePath
     }
 
+    // MARK: - Adventure story generation
+
+    /// Generates a structured 3-page adventure story that leads the child to learn
+    /// the target vocabulary word. Gender and name are used to personalise the narrative.
+    func generateAdventureStory(target: VocabItem, childName: String, gender: Gender) async throws -> AdventureStory {
+        let engine = try await engine()
+        let conversation = try await engine.createConversation(
+            with: ConversationConfig(
+                systemMessage: Message(
+                    "You write short, exciting adventure stories for young children learning Mandarin Chinese. Keep language simple and positive.",
+                    role: .system
+                ),
+                samplerConfig: try? SamplerConfig(topK: 40, topP: 0.95, temperature: 0.85)
+            )
+        )
+        let hero = childName.isEmpty ? "the explorer" : childName
+        let genderNote = gender == .boy ? "boy hero" : "girl hero"
+        let prompt = """
+        Create a mini adventure story for a \(genderNote) named \(hero).
+        The story must naturally lead to needing the Chinese word for "\(target.en)" (hanzi: \(target.hanzi), pinyin: \(target.pinyin)).
+        Reply ONLY in this exact format, one line each:
+        title: [3-4 word exciting title]
+        setting: [2 sentences: vivid adventure setting — jungle, market, castle, space, etc.]
+        challenge: [2 sentences: a problem that REQUIRES knowing the Chinese word]
+        type: [SCAN or MATCH or SPEAK — pick based on the challenge]
+        hint: [1 sentence: what the parent helps the child do]
+        victory: [2 sentences: joyful conclusion after the word is learned]
+        """
+        let response = try await conversation.sendMessage(Message(prompt))
+        let raw = response.toString
+        let lines = raw.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }
+        func extract(_ prefix: String) -> String {
+            lines.first { $0.lowercased().hasPrefix(prefix) }
+                .map { String($0.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces) } ?? ""
+        }
+        let typeStr = extract("type:").uppercased()
+        let missionType: StoryMissionType = typeStr.contains("SCAN") ? .scan : typeStr.contains("SPEAK") ? .speak : .match
+        let title    = extract("title:")
+        let setting  = extract("setting:")
+        let challenge = extract("challenge:")
+        let hint     = extract("hint:")
+        let victory  = extract("victory:")
+        guard !setting.isEmpty, !challenge.isEmpty else {
+            // Gemma output was garbled — fall back to curated story
+            // (caller catches GemmaError.storyGenerationFailed)
+            throw GemmaError.storyGenerationFailed
+        }
+        print("[QuackGemma] adventure story: \(title) / \(missionType.rawValue)")
+        return AdventureStory(title: title.isEmpty ? "Adventure!" : title,
+                              setting: setting, challenge: challenge,
+                              missionType: missionType, missionHint: hint, victory: victory)
+    }
+
+    // MARK: - Free scanner (Snap a photo feature)
+
+    struct ScanResult {
+        let en: String
+        let hanzi: String
+        let pinyin: String
+        let funFact: String
+        let itemClass: String  // e.g. FOOD, ANIMAL, FRUIT, HOUSEHOLD, NATURE, VEHICLE, TOY
+    }
+
+    /// Identifies any object in a photo and returns its Mandarin translation + category class.
+    func freeScanner(image: Data) async throws -> ScanResult {
+        let engine = try await engine()
+        let conversation = try await engine.createConversation(
+            with: ConversationConfig(
+                systemMessage: Message(
+                    "You help young children learn Mandarin Chinese. Identify objects and provide their Mandarin translation.",
+                    role: .system
+                ),
+                samplerConfig: try? SamplerConfig(topK: 1, topP: 1.0, temperature: 1.0)
+            )
+        )
+        let imagePath = try Self.writeTempImage(image)
+        defer { try? FileManager.default.removeItem(atPath: imagePath) }
+        let prompt = """
+        Look at this photo. What is the main object?
+        Reply ONLY in this exact format, nothing else:
+        english: [one or two word English name]
+        hanzi: [Chinese characters]
+        pinyin: [pinyin with tone marks]
+        class: [one word in UPPERCASE: FOOD, ANIMAL, FRUIT, VEGETABLE, HOUSEHOLD, NATURE, VEHICLE, TOY, CLOTHING, OTHER]
+        fact: [one fun sentence for a child]
+        """
+        let response = try await conversation.sendMessage(
+            Message(of: .imageFile(imagePath), .text(prompt))
+        )
+        let lines = response.toString
+            .split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+
+        func extract(_ prefix: String) -> String {
+            lines.first { $0.lowercased().hasPrefix(prefix) }
+                .map { String($0.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces) } ?? ""
+        }
+
+        let en = extract("english:")
+        let hanzi = extract("hanzi:")
+        let pinyin = extract("pinyin:")
+        let itemClass = extract("class:").uppercased().isEmpty ? "OBJECT" : extract("class:").uppercased()
+        let fact = extract("fact:")
+        guard !en.isEmpty, !hanzi.isEmpty else { throw GemmaError.scanFailed }
+        print("[QuackGemma] freeScanner → \(en) / \(hanzi) / \(pinyin) / \(itemClass)")
+        return ScanResult(en: en, hanzi: hanzi, pinyin: pinyin, funFact: fact, itemClass: itemClass)
+    }
+
     enum GemmaError: LocalizedError {
         case modelMissing
         case storyGenerationFailed
+        case scanFailed
         var errorDescription: String? {
             switch self {
-            case .modelMissing:
-                return "Gemma model file is missing from the app bundle."
-            case .storyGenerationFailed:
-                return "Could not generate a story."
+            case .modelMissing:          return "Gemma model file is missing from the app bundle."
+            case .storyGenerationFailed: return "Could not generate a story."
+            case .scanFailed:            return "Q couldn't figure out what that is. Try again!"
             }
         }
     }

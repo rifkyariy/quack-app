@@ -11,7 +11,7 @@ struct MissionsHubView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        MainTabChrome(active: $activeTab) {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -48,10 +48,7 @@ struct MissionsHubView: View {
                 }
             }
             .background(Color.cream)
-
-            TabBar(active: $activeTab)
         }
-        .ignoresSafeArea(edges: .bottom)
         .onAppear { appeared = true }
     }
 }

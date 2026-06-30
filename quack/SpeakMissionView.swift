@@ -8,6 +8,7 @@ struct SpeakMissionView: View {
     @State private var wordIndex = 0
     @State private var phase: SpeakPhase = .idle
     @State private var score = 0
+    @State private var primaryPassed = false  // score >= 60 on first word
     @State private var heard: String = ""
     @State private var syllableOK = false
     @State private var toneOK = false
@@ -334,14 +335,19 @@ struct SpeakMissionView: View {
         player.stop()
         SpeechSpeaker.shared.stop()
         errorMessage = nil
+        if wordIndex == 0 && score >= 60 { primaryPassed = true }
         if wordIndex < words.count - 1 {
             wordIndex += 1
             phase = .idle
             score = 0
             heard = ""
             lastRecording = nil
-        } else {
+        } else if primaryPassed || score >= 60 {
             onComplete(current.id)
+        } else {
+            // did not pass the primary word — send back to retry
+            wordIndex = 0; phase = .idle; score = 0; heard = ""; lastRecording = nil
+            errorMessage = "Try saying the word more clearly!"
         }
     }
 }

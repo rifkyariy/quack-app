@@ -12,13 +12,13 @@ struct OnboardingFlow: View {
     let onComplete: () -> Void
     @Environment(AppState.self) private var appState
 
-    enum Step: Int { case splash = 0, name = 1, gender = 2, age = 3, intro = 4, setup = 5 }
+    enum Step: Int { case splash = 0, name = 1, gender = 2, age = 3, setup = 4 }
     @State private var step: Step = .splash
     @State private var slideDirection: CGFloat = 1  // 1 = forward, -1 = back
     @State private var flowVisible: Bool = false    // For entry animation
 
     private func advance() {
-        if step.rawValue < 5 {
+        if step.rawValue < 4 {
             step = Step(rawValue: step.rawValue + 1) ?? .setup
         }
     }
@@ -29,107 +29,63 @@ struct OnboardingFlow: View {
         }
     }
 
-    private var progressBar: some View {
-        let progressIdx = step.rawValue - 1  // name=0, gender=1, age=2, intro=3
-        return HStack(spacing: 8) {
-            ForEach(0..<4, id: \.self) { idx in
-                Capsule()
-                    .fill(idx <= progressIdx ? Color.quackOrange : Color.quackOrange.opacity(0.25))
-                    .frame(width: idx == progressIdx ? 28 : 8, height: 6)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: step)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
-    }
+    // ponytail: dots now live inside each step view
+    private var progressBar: some View { EmptyView() }
 
-    private var asymmetricTransition: AnyTransition {
-        .asymmetric(
-            insertion: .move(edge: slideDirection > 0 ? .trailing : .leading)
-                .combined(with: .opacity),
-            removal: .move(edge: slideDirection > 0 ? .leading : .trailing)
-                .combined(with: .opacity)
-        )
-    }
+    private var asymmetricTransition: AnyTransition { .opacity }
 
     var body: some View {
         Group {
             switch step {
             case .splash:
                 SplashView(onNext: { withAnimation { step = .name } })
-            case .name:
+            default:
                 VStack(spacing: 0) {
-                    progressBar
+                    if step != .setup {
+                        progressBar
+                    }
                     ZStack {
-                        NameView(
-                            initial: appState.name,
-                            onBack: { withAnimation { step = .splash } },
-                            onNext: { name in
-                                appState.name = name
-                                withAnimation { step = .gender }
-                            }
-                        )
+                        switch step {
+                        case .name:
+                            NameView(
+                                initialName: appState.name,
+                                initialCodename: appState.codename,
+                                onBack: { withAnimation { step = .splash } },
+                                onNext: { name, codename in
+                                    appState.name = name
+                                    appState.codename = codename
+                                    withAnimation { step = .gender }
+                                }
+                            )
+                        case .gender:
+                            GenderView(
+                                initial: appState.gender,
+                                onBack: { withAnimation { step = .name } },
+                                onNext: { gender in
+                                    appState.gender = gender
+                                    withAnimation { step = .age }
+                                }
+                            )
+                        case .age:
+                            AgeView(
+                                initial: appState.age,
+                                onBack: { withAnimation { step = .gender } },
+                                onNext: { age in
+                                    appState.age = age
+                                    withAnimation { step = .setup }
+                                }
+                            )
+                        case .setup:
+                            SetupView(onNext: onComplete)
+                        default:
+                            EmptyView()
+                        }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .id(step)
                     .transition(asymmetricTransition)
                 }
                 .background(Color.cream.ignoresSafeArea())
-            case .gender:
-                VStack(spacing: 0) {
-                    progressBar
-                    ZStack {
-                        GenderView(
-                            initial: appState.gender,
-                            onBack: { withAnimation { step = .name } },
-                            onNext: { gender in
-                                appState.gender = gender
-                                withAnimation { step = .age }
-                            }
-                        )
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .id(step)
-                    .transition(asymmetricTransition)
-                }
-                .background(Color.cream.ignoresSafeArea())
-            case .age:
-                VStack(spacing: 0) {
-                    progressBar
-                    ZStack {
-                        AgeView(
-                            initial: appState.age,
-                            onBack: { withAnimation { step = .gender } },
-                            onNext: { age in
-                                appState.age = age
-                                withAnimation { step = .intro }
-                            }
-                        )
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .id(step)
-                    .transition(asymmetricTransition)
-                }
-                .background(Color.cream.ignoresSafeArea())
-            case .intro:
-                VStack(spacing: 0) {
-                    progressBar
-                    ZStack {
-                        IntroView(
-                            name: appState.name,
-                            onBack: { withAnimation { step = .age } },
-                            onNext: { withAnimation { step = .setup } }
-                        )
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .id(step)
-                    .transition(asymmetricTransition)
-                }
-                .background(Color.cream.ignoresSafeArea())
-            case .setup:
-                SetupView(onNext: onComplete)
-                    .id(step)
-                    .transition(asymmetricTransition)
             }
         }
         .offset(y: flowVisible ? 0 : 48)
@@ -166,14 +122,14 @@ struct OnboardingFlow: View {
                             return
                         }
                         slideDirection = 1
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
+                        withAnimation(.easeOut(duration: 0.2)) {
                             advance()
                         }
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     } else {
                         // Right swipe — back
                         slideDirection = -1
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
+                        withAnimation(.easeOut(duration: 0.2)) {
                             retreat()
                         }
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -183,214 +139,229 @@ struct OnboardingFlow: View {
     }
 }
 
-// MARK: - SplashView
+// MARK: - SplashView (onboarding intro)
 struct SplashView: View {
     let onNext: () -> Void
-    @State private var visible = false
+    @State private var appeared = false
 
     var body: some View {
         ZStack {
-            Color.quackOrange.ignoresSafeArea()
-            Sparkles(count: 8, animate: true)
+            Color.cream.ignoresSafeArea()
+            FloatingShapes()
 
             VStack(spacing: 0) {
                 Spacer()
 
-                Mascot(state: .speaking, size: 170)
+                
 
-                Eyebrow(text: "Mission begins", color: .quackYellow)
-                    .padding(.top, 16)
+                VStack(spacing: 10) {
+                    Text("Let's learn\nMandarin!")
+                        .font(.display(36, weight: .black))
+                        .foregroundStyle(Color.ink)
+                        .multilineTextAlignment(.center)
 
-                Text("Hi, I'm Q")
-                    .font(.display(38, weight: .black))
-                    .foregroundStyle(.white)
-                    .padding(.top, 8)
-
-                Text("Your secret-agent buddy for learning\nMandarin. Ready to start today's mission?")
-                    .font(.bodyText(14))
-                    .foregroundStyle(.white.opacity(0.92))
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 4)
-                    .padding(.horizontal, 32)
+                    Text("Quack makes learning Mandarin fun and easy!\nYour AI buddy for play, practice, and mastering Chinese.")
+                        .font(.bodyText(14))
+                        .foregroundStyle(Color.inkMuted)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+                .offset(y: appeared ? 0 : 14)
+                .opacity(appeared ? 1 : 0)
+                .animation(.easeOut(duration: 0.38).delay(0.2), value: appeared)
+                .padding(.top, 28)
 
                 Spacer()
 
-                CTAButton(label: "Let's go", variant: .ink, action: onNext)
-                    .padding(.horizontal, 24)
-                    .opacity(visible ? 1 : 0)
-                    .offset(y: visible ? 0 : 16)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: visible)
+                VStack(spacing: 0) {
+                    Image("mascot-aha")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: 270)
+                        .shadow(color: .ink.opacity(0.10), radius: 24, x: 0, y: 12)
+                        .scaleEffect(appeared ? 1 : 0.75)
+                        .opacity(appeared ? 1 : 0)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.58).delay(0.05), value: appeared)
+                        .padding(.leading, 12)
 
-                Spacer().frame(height: 32)
+                    CTAButton(label: "Let's go!", variant: .orange, action: onNext)
+                        .padding(.horizontal, 24)
+                        .offset(y: appeared ? 0 : 14)
+                        .opacity(appeared ? 1 : 0)
+                        .animation(.easeOut(duration: 0.38).delay(0.3), value: appeared)
+                }
+
+                StepDots(current: 0, total: 4)
+                    .padding(.top, 20)
+                    .padding(.bottom, 36)
+                    .opacity(appeared ? 1 : 0)
+                    .animation(.easeOut(duration: 0.3).delay(0.35), value: appeared)
             }
-            .scrollableWhenCompact()
         }
-        .onAppear { visible = true }
+        .onAppear { appeared = true }
     }
 }
 
 // MARK: - NameView
 struct NameView: View {
-    let initial: String
+    let initialName: String
+    let initialCodename: String
     let onBack: () -> Void
-    let onNext: (String) -> Void
+    let onNext: (String, String) -> Void
 
     @State private var name: String
+    @State private var selectedAgent: String
     @State private var appeared = false
     @FocusState private var focused: Bool
 
-    init(initial: String, onBack: @escaping () -> Void, onNext: @escaping (String) -> Void) {
-        self.initial = initial
+    private let agents = ["icon-agent-q","icon-agent-b","icon-agent-c",
+                          "icon-agent-d","icon-agent-p","icon-agent-t"]
+
+    init(initialName: String, initialCodename: String,
+         onBack: @escaping () -> Void, onNext: @escaping (String, String) -> Void) {
+        self.initialName = initialName
+        self.initialCodename = initialCodename
         self.onBack = onBack
         self.onNext = onNext
-        _name = State(initialValue: initial)
+        _name = State(initialValue: initialName)
+        _selectedAgent = State(initialValue: initialCodename.isEmpty ? "icon-agent-q" : initialCodename)
     }
 
     var body: some View {
         ZStack {
             Color.cream.ignoresSafeArea()
-                .onTapGesture {
-                    focused = false
-                }
-                .gesture(
-                    DragGesture()
-                        .onEnded { value in
-                            if value.translation.width > 50 {
-                                triggerSwipeHaptic()
-                                focused = false
-                                onBack()
-                            }
-                        }
-                )
+            FloatingShapes()
 
             VStack(spacing: 0) {
-                HStack(alignment: .center) {
+                HStack {
                     BackBtn(action: onBack)
-
                     Spacer()
-
-                    Text("Step 1 of 4")
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color.inkMuted)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .offset(y: appeared ? 0 : 16)
-                .opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
+                .padding(.horizontal, 24).padding(.top, 16)
 
-                VStack(alignment: .leading, spacing: 14) {
-                    Eyebrow(text: "Agent setup", flank: false, size: 11)
-                    Text("What should Q call you?")
-                        .font(.display(34, weight: .black))
-                        .foregroundStyle(Color.ink)
-                    Text("Enter your first name so your missions feel personal.")
-                        .font(.bodyText(15))
-                        .foregroundStyle(Color.inkMuted)
-                        .lineLimit(2)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-                .offset(y: appeared ? 0 : 16)
-                .opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.05), value: appeared)
-
-                Spacer(minLength: 16)
-
-                VStack(spacing: 20) {
-                    ZStack(alignment: .topTrailing) {
-                        RoundedRectangle(cornerRadius: 36)
-                            .fill(LinearGradient(
-                                colors: [Color.quackOrange, Color.quackOrangeSoft],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ))
-                            .grain()
-                            .popShadow()
-                            .onTapGesture {
-                                focused = false
-                            }
-
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 28, weight: .heavy))
-                            .foregroundStyle(.white.opacity(0.88))
-                            .padding(22)
-                            .onTapGesture {
-                                focused = false
-                            }
-
-                        VStack(spacing: 24) {
-                            Text("Your name")
-                                .font(.bodyText(13, weight: .bold))
-                                .foregroundStyle(.white.opacity(0.9))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 24)
-                                .padding(.top, 26)
-                                .onTapGesture {
-                                    focused = false
-                                }
-
-                            TextField("e.g. Nia", text: $name)
-                                .font(.system(size: 22, weight: .heavy, design: .rounded))
-                                .foregroundStyle(.white)
-                                .padding(.vertical, 18)
-                                .padding(.horizontal, 20)
-                                .background(Color.white.opacity(0.18))
-                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                .padding(.horizontal, 22)
-                                .focused($focused)
-                                .submitLabel(.done)
-                                .onSubmit {
-                                    focused = false
-                                    let trimmed = name.trimmingCharacters(in: .whitespaces)
-                                    if !trimmed.isEmpty { onNext(trimmed) }
-                                }
-
-                            Text("Q will use this name in mission prompts and celebration messages.")
-                                .font(.system(size: 14, weight: .medium, design: .rounded))
-                                .foregroundStyle(.white.opacity(0.88))
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        // Title
+                        VStack(spacing: 8) {
+                            Text("Set up your profile")
+                                .font(.display(28, weight: .black))
+                                .foregroundStyle(Color.ink)
                                 .multilineTextAlignment(.center)
-                                .padding(.horizontal, 28)
-                                .padding(.bottom, 24)
-                                .onTapGesture {
-                                    focused = false
-                                }
+                            Text("Tell us your name and pick your agent!")
+                                .font(.bodyText(14))
+                                .foregroundStyle(Color.inkMuted)
+                                .multilineTextAlignment(.center)
                         }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 260)
-                }
-                .padding(.horizontal, 24)
-                .offset(y: appeared ? 0 : 16)
-                .opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: appeared)
+                        .padding(.horizontal, 28).padding(.top, 20)
+                        .opacity(appeared ? 1 : 0)
+                        .animation(.easeOut(duration: 0.35).delay(0.05), value: appeared)
 
-                Spacer(minLength: 12)
+                        // Selected agent preview
+                        Image(selectedAgent)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100, height: 100)
+                            .padding(.top, 20)
+                            .scaleEffect(appeared ? 1 : 0.7)
+                            .opacity(appeared ? 1 : 0)
+                            .animation(.spring(response: 0.45, dampingFraction: 0.6).delay(0.1), value: appeared)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.65), value: selectedAgent)
+
+                        // Name field
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Your name")
+                                .font(.bodyText(12, weight: .bold))
+                                .foregroundStyle(Color.inkMuted)
+                                .padding(.horizontal, 4)
+                            HStack(spacing: 12) {
+                                TextField("e.g. Alex", text: $name)
+                                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                                    .foregroundStyle(Color.ink)
+                                    .focused($focused)
+                                    .submitLabel(.done)
+                                    .onSubmit { focused = false }
+                                Image(systemName: "pencil")
+                                    .foregroundStyle(Color.inkMuted)
+                                    .font(.system(size: 15, weight: .semibold))
+                            }
+                            .padding(.horizontal, 16).padding(.vertical, 14)
+                            .background(Color.paper)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .cardShadow()
+                        }
+                        .padding(.horizontal, 24).padding(.top, 16)
+                        .opacity(appeared ? 1 : 0)
+                        .animation(.easeOut(duration: 0.35).delay(0.15), value: appeared)
+
+                        // Codename / agent picker
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Your codename")
+                                .font(.bodyText(12, weight: .bold))
+                                .foregroundStyle(Color.inkMuted)
+                                .padding(.horizontal, 4)
+
+                            LazyVGrid(
+                                columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3),
+                                spacing: 12
+                            ) {
+                                ForEach(agents, id: \.self) { agent in
+                                    let sel = agent == selectedAgent
+                                    Button {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                            selectedAgent = agent
+                                        }
+                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    } label: {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 18)
+                                                .fill(sel ? Color.quackOrange.opacity(0.1) : Color.paper)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 18)
+                                                        .stroke(sel ? Color.quackOrange : Color.inkFaint,
+                                                                lineWidth: sel ? 2.5 : 1)
+                                                )
+                                            Image(agent)
+                                                .resizable()
+                                                .scaledToFit()
+                                                .padding(10)
+                                        }
+                                        .frame(height: 84)
+                                        .scaleEffect(sel ? 1.06 : 1)
+                                    }
+                                    .buttonStyle(TapPress())
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 24).padding(.top, 20)
+                        .opacity(appeared ? 1 : 0)
+                        .animation(.easeOut(duration: 0.35).delay(0.2), value: appeared)
+
+                        Spacer(minLength: 24)
+                    }
+                }
 
                 CTAButton(
-                    label: "Continue",
-                    variant: .ink,
-                    disabled: name.trimmingCharacters(in: .whitespaces).isEmpty,
-                    action: {
-                        focused = false
-                        let trimmed = name.trimmingCharacters(in: .whitespaces)
-                        onNext(trimmed.isEmpty ? "Agent" : trimmed)
-                    }
-                )
+                    label: "Next",
+                    variant: .orange,
+                    disabled: name.trimmingCharacters(in: .whitespaces).isEmpty
+                ) {
+                    focused = false
+                    let t = name.trimmingCharacters(in: .whitespaces)
+                    onNext(t.isEmpty ? "Agent" : t, selectedAgent)
+                }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 32)
-                .offset(y: appeared ? 0 : 16)
                 .opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.15), value: appeared)
+                .animation(.easeOut(duration: 0.35).delay(0.25), value: appeared)
+
+                StepDots(current: 1, total: 4)
+                    .padding(.top, 16).padding(.bottom, 32)
+                    .opacity(appeared ? 1 : 0)
             }
-            .scrollableWhenCompact()
         }
+        .onTapGesture { focused = false }
         .onAppear {
-            withAnimation {
-                appeared = true
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            appeared = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 withAnimation { focused = true }
             }
         }
@@ -403,84 +374,98 @@ struct NameView: View {
 }
 
 #Preview("Name") {
-    NameView(initial: "Alex", onBack: {}, onNext: { _ in })
+    NameView(initialName: "Alex", initialCodename: "icon-agent-q", onBack: {}, onNext: { _, _ in })
         .environment(AppState())
 }
 
-// MARK: - AgeStepButton
-private struct AgeStepButton: View {
-    let symbol: String
-    let enabled: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 20, weight: .heavy))
-                .foregroundStyle(enabled ? Color.ink : Color.ink.opacity(0.3))
-                .frame(width: 48, height: 48)
-                .background(Color.white)
-                .clipShape(Circle())
-                .shadow(color: .ink.opacity(0.12), radius: 6, x: 0, y: 2)
-        }
-        .buttonStyle(TapPress())
-        .disabled(!enabled)
-    }
-}
-
-// MARK: - AgeSliderTrack
-private struct AgeSliderTrack: View {
+// MARK: - AgeDrumPicker
+private struct AgeDrumPicker: View {
     @Binding var age: Int
-    private let minAge = 4
-    private let maxAge = 12
-    private let totalSteps = 9
+    private let ages = Array(3...14)
+    private let itemH: CGFloat = 54
 
-    @GestureState private var isDragging = false
-
-    private var fraction: Double {
-        Double(age - minAge) / Double(maxAge - minAge)
-    }
+    @State private var scrollPos: CGFloat = 0   // center position in points
+    @State private var savedPos: CGFloat = 0
+    @State private var isDragging = false
+    @State private var lastTick = -1
 
     var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let thumbX = max(13, min(w - 13, fraction * w))
-            let tickSpacing = w / Double(totalSteps - 1)
+        ZStack {
+            // Selection band
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.quackOrange.opacity(0.08))
+                .frame(height: itemH)
+                .overlay(RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.quackOrange.opacity(0.28), lineWidth: 1.5))
 
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.white.opacity(0.25))
-                    .frame(height: 6)
-                Capsule()
-                    .fill(Color.white.opacity(0.6))
-                    .frame(width: thumbX, height: 6)
-                ForEach(0..<totalSteps, id: \.self) { i in
-                    Rectangle()
-                        .fill(Color.white.opacity(i % 3 == 0 ? 0.7 : 0.35))
-                        .frame(width: 2, height: i % 3 == 0 ? 12 : 7)
-                        .position(x: Double(i) * tickSpacing, y: geo.size.height / 2)
+            // 3D wheel items — rotation applied before offset so it pivots at ZStack center
+            ForEach(ages.indices, id: \.self) { i in
+                let rawY = CGFloat(i) * itemH - scrollPos
+                let slot  = rawY / itemH
+                if abs(slot) < 3.0 {
+                    let angle = slot * 30.0
+                    let fade  = Double(max(0, 1 - abs(slot) / 2.6))
+                    let sel   = abs(slot) < 0.45
+                    Text("\(ages[i])")
+                        .font(.system(
+                            size: sel ? 44 : (abs(slot) < 1.45 ? 29 : 19),
+                            weight: sel ? .black : .semibold,
+                            design: .rounded
+                        ))
+                        .foregroundStyle(sel ? Color.quackOrange : Color.ink)
+                        .opacity(fade)
+                        .rotation3DEffect(
+                            .degrees(-angle),
+                            axis: (x: 1, y: 0, z: 0),
+                            perspective: 0.45
+                        )
+                        .offset(y: rawY)
                 }
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: isDragging ? 30 : 26, height: isDragging ? 30 : 26)
-                    .shadow(color: .ink.opacity(0.18), radius: isDragging ? 8 : 4, x: 0, y: 2)
-                    .position(x: thumbX, y: geo.size.height / 2)
-                    .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isDragging)
             }
-            .frame(height: geo.size.height)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .updating($isDragging) { _, s, _ in s = true }
-                    .onChanged { v in
-                        let frac = max(0, min(1, v.location.x / w))
-                        let newAge = Int((frac * 8).rounded()) + minAge
-                        if newAge != age {
-                            age = newAge
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        }
+
+            // Top + bottom cream fade masks
+            VStack {
+                LinearGradient(colors: [Color.cream, .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: itemH * 1.6)
+                Spacer()
+                LinearGradient(colors: [.clear, Color.cream], startPoint: .top, endPoint: .bottom)
+                    .frame(height: itemH * 1.6)
+            }
+            .allowsHitTesting(false)
+        }
+        .frame(height: itemH * 5)
+        .clipped()
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 1)
+                .onChanged { v in
+                    if !isDragging { savedPos = scrollPos; isDragging = true }
+                    scrollPos = savedPos - v.translation.height
+
+                    // Selection tick on each integer crossing
+                    let liveIdx = min(max(Int((scrollPos / itemH).rounded()), 0), ages.count - 1)
+                    if liveIdx != lastTick {
+                        lastTick = liveIdx
+                        UISelectionFeedbackGenerator().selectionChanged()
                     }
-            )
+                }
+                .onEnded { v in
+                    isDragging = false; lastTick = -1
+                    // Add a bit of momentum via velocity
+                    let projected = scrollPos - v.velocity.height * 0.1
+                    let idx = min(max(Int((projected / itemH).rounded()), 0), ages.count - 1)
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.76)) {
+                        scrollPos = CGFloat(idx) * itemH
+                    }
+                    let newAge = ages[idx]
+                    if newAge != age {
+                        age = newAge
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    }
+                }
+        )
+        .onAppear {
+            scrollPos = CGFloat(ages.firstIndex(of: age) ?? 0) * itemH
         }
     }
 }
@@ -501,17 +486,10 @@ struct AgeView: View {
         _age = State(initialValue: max(4, min(12, initial)))
     }
 
-    private func stepAge(by delta: Int) {
-        let newAge = max(4, min(12, age + delta))
-        if newAge != age {
-            age = newAge
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        }
-    }
-
     var body: some View {
         ZStack {
             Color.cream.ignoresSafeArea()
+            FloatingShapes()
 
             VStack(spacing: 0) {
                 HStack {
@@ -519,76 +497,61 @@ struct AgeView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 24).padding(.top, 16)
-                .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Eyebrow(text: "Step 3 of 4", flank: false, size: 11)
+                // Title centered
+                VStack(spacing: 8) {
                     Text("How old are you?")
-                        .font(.display(28, weight: .heavy))
+                        .font(.display(30, weight: .black))
                         .foregroundStyle(Color.ink)
-                    Text("Q adjusts the level to match")
-                        .font(.bodyText(13))
+                        .multilineTextAlignment(.center)
+                    Text("We'll personalise your learning just for you!")
+                        .font(.bodyText(14))
                         .foregroundStyle(Color.inkMuted)
+                        .multilineTextAlignment(.center)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24).padding(.top, 14)
-                .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.05), value: appeared)
+                .padding(.horizontal, 32).padding(.top, 20)
+                .opacity(appeared ? 1 : 0)
+                .animation(.easeOut(duration: 0.35).delay(0.05), value: appeared)
 
-                ZStack {
-                    RoundedRectangle(cornerRadius: 28)
-                        .fill(Color.quackOrange)
-                        .grain()
-                        .popShadow()
-
-                    Sparkles(count: 4, opacity: 0.5)
-
-                    VStack(spacing: 20) {
-                        // Big animated number
-                        VStack(spacing: 4) {
-                            Text("\(age)")
-                                .font(.display(80, weight: .black))
-                                .foregroundStyle(.white)
-                                .contentTransition(.numericText(countsDown: false))
-                                .animation(.spring(response: 0.3, dampingFraction: 0.65), value: age)
-                                .frame(minWidth: 120)
-                            Text("years old")
-                                .font(.bodyText(14, weight: .bold))
-                                .foregroundStyle(.white.opacity(0.85))
-                        }
-
-                        // − | slider | +
-                        HStack(spacing: 12) {
-                            AgeStepButton(symbol: "minus", enabled: age > 4) {
-                                stepAge(by: -1)
-                            }
-                            AgeSliderTrack(age: $age)
-                                .frame(height: 44)
-                            AgeStepButton(symbol: "plus", enabled: age < 12) {
-                                stepAge(by: 1)
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 24)
+                // Birthday cake with age overlaid on the cake face (bottom ~25% of image)
+                Image("birthday-bg")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 200)
+                    .overlay(alignment: .bottom) {
+                        Text("\(age)")
+                            .font(.system(size: 32, weight: .black, design: .rounded))
+                            .foregroundStyle(Color.quackOrange)
+                            .shadow(color: .white.opacity(0.8), radius: 5)
+                            .contentTransition(.numericText())
+                            .animation(.spring(response: 0.25, dampingFraction: 0.65), value: age)
+                            .padding(.bottom, 20)
                     }
-                    .padding(.top, 28)
-                }
-                .frame(maxWidth: .infinity, minHeight: 280)
-                .padding(.horizontal, 24).padding(.top, 14)
-                .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: appeared)
+                .padding(.top, 20)
+                .scaleEffect(appeared ? 1 : 0.75)
+                .opacity(appeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.1), value: appeared)
+
+                // Drum picker
+                AgeDrumPicker(age: $age)
+                    .padding(.horizontal, 60)
+                    .padding(.top, 16)
+                    .opacity(appeared ? 1 : 0)
+                    .animation(.easeOut(duration: 0.35).delay(0.18), value: appeared)
 
                 Spacer()
 
-                CTAButton(label: "Continue", variant: .ink, action: { onNext(age) })
-                    .padding(.horizontal, 24).padding(.bottom, 28)
-                    .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.15), value: appeared)
+                CTAButton(label: "Next", variant: .orange, action: { onNext(age) })
+                    .padding(.horizontal, 24)
+                    .opacity(appeared ? 1 : 0)
+                    .animation(.easeOut(duration: 0.35).delay(0.25), value: appeared)
+
+                StepDots(current: 3, total: 4)
+                    .padding(.top, 16).padding(.bottom, 32)
+                    .opacity(appeared ? 1 : 0)
             }
-            .scrollableWhenCompact()
         }
-        .onAppear { withAnimation { appeared = true } }
+        .onAppear { appeared = true }
         .gesture(DragGesture().onEnded { v in
             if v.translation.width > 50 { triggerSwipeHaptic(); onBack() }
         })
@@ -619,6 +582,7 @@ struct GenderView: View {
     var body: some View {
         ZStack {
             Color.cream.ignoresSafeArea()
+            FloatingShapes()
 
             VStack(spacing: 0) {
                 HStack {
@@ -629,25 +593,24 @@ struct GenderView: View {
                 .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
                 .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Eyebrow(text: "Step 2 of 4", flank: false, size: 11)
+                VStack(spacing: 8) {
                     Text("Who are you?")
-                        .font(.display(28, weight: .heavy))
+                        .font(.display(28, weight: .black))
                         .foregroundStyle(Color.ink)
-                    Text("Q will use this to personalise your experience")
-                        .font(.bodyText(13))
+                        .multilineTextAlignment(.center)
+                    Text("Our Agent will personalise your experience for you!")
+                        .font(.bodyText(14))
                         .foregroundStyle(Color.inkMuted)
+                        .multilineTextAlignment(.center)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24).padding(.top, 14)
+                .padding(.horizontal, 32).padding(.top, 20)
                 .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.05), value: appeared)
 
                 HStack(spacing: 14) {
-                    GenderTile(
+                    GenderImageCard(
                         label: "Boy",
-                        icon: "figure.stand",
-                        color: Color.cobalt,
+                        imageName: "onboarding-boy",
                         isSelected: selected == .boy
                     ) {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
@@ -656,10 +619,9 @@ struct GenderView: View {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     }
 
-                    GenderTile(
+                    GenderImageCard(
                         label: "Girl",
-                        icon: "figure.stand.dress",
-                        color: Color.rose,
+                        imageName: "onboarding-girl",
                         isSelected: selected == .girl
                     ) {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
@@ -674,10 +636,13 @@ struct GenderView: View {
 
                 Spacer()
 
-                CTAButton(label: "Continue", variant: .ink, action: { onNext(selected) })
-                    .padding(.horizontal, 24).padding(.bottom, 28)
+                CTAButton(label: "Next", variant: .orange, action: { onNext(selected) })
+                    .padding(.horizontal, 24)
                     .offset(y: appeared ? 0 : 16).opacity(appeared ? 1 : 0)
                     .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.15), value: appeared)
+
+                StepDots(current: 2, total: 4)
+                    .padding(.top, 16).padding(.bottom, 32)
             }
         }
         .onAppear { withAnimation { appeared = true } }
@@ -687,39 +652,31 @@ struct GenderView: View {
     }
 }
 
-// MARK: - GenderTile
-private struct GenderTile: View {
+// MARK: - GenderImageCard
+private struct GenderImageCard: View {
     let label: String
-    let icon: String
-    let color: Color
+    let imageName: String
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? color : color.opacity(0.12))
-                        .frame(width: 72, height: 72)
-                    Image(systemName: icon)
-                        .font(.system(size: 32, weight: .semibold))
-                        .foregroundStyle(isSelected ? .white : color.opacity(0.8))
-                }
+            VStack(spacing: 12) {
+                Image(imageName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 140, height: 140)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(isSelected ? Color.quackOrange : Color.clear, lineWidth: 3)
+                    )
+
                 Text(label)
-                    .font(.display(17, weight: .heavy))
+                    .font(.display(16, weight: .heavy))
                     .foregroundStyle(isSelected ? Color.ink : Color.inkMuted)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 28)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color.paper)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(isSelected ? color : Color.inkFaint, lineWidth: isSelected ? 2 : 1)
-                    )
-            )
             .scaleEffect(isSelected ? 1.02 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
         }
@@ -729,7 +686,7 @@ private struct GenderTile: View {
     }
 }
 
-// MARK: - IntroView
+// MARK: - IntroView ("How Quack works")
 struct IntroView: View {
     let name: String
     let onBack: () -> Void
@@ -737,10 +694,12 @@ struct IntroView: View {
 
     @State private var appeared = false
 
-    private let tips: [(icon: QuackIconName, title: String, body: String, color: Color)] = [
-        (.camera, "Point at things",   "Show Q an apple. Q tells you what it is in Mandarin.", .quackOrange),
-        (.mic,    "Say it back",       "Repeat the word. Q listens and tells you if it sounds right.", .cobalt),
-        (.star,   "Collect stickers",  "Every word you learn becomes a sticker in your book.", .mintDeep),
+    private let steps: [(symbol: String, title: String, body: String, color: Color)] = [
+        ("gamecontroller.fill", "Choose a Mission",      "Pick a fun topic to explore",                  .cobalt),
+        ("camera.fill",         "Scan an Object",        "Use your camera to scan anything",              .quackOrange),
+        ("plus.circle.fill",    "Get the Translation",   "See the Chinese word and meaning",              .quackOrange),
+        ("mic.fill",            "Practice & Pronounce",  "Learn the tone and perfect your pronunciation", .cobalt),
+        ("star.fill",           "Collect Stickers",      "Earn stickers and unlock new rewards!",         .quackYellow),
     ]
 
     var body: some View {
@@ -752,87 +711,109 @@ struct IntroView: View {
                     BackBtn(action: onBack)
                     Spacer()
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .offset(y: appeared ? 0 : 16)
-                .opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
+                .padding(.horizontal, 24).padding(.top, 16)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Eyebrow(text: "Step 4 of 4", flank: false, size: 11)
-                    Text("How it works, \(name)")
-                        .font(.display(30, weight: .heavy))
-                        .foregroundStyle(Color.ink)
-                    Text("Three things to know before your first mission")
-                        .font(.bodyText(14))
-                        .foregroundStyle(Color.inkMuted)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .offset(y: appeared ? 0 : 16)
-                .opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.05), value: appeared)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        VStack(spacing: 8) {
+                            Text("How Quack works")
+                                .font(.display(28, weight: .black))
+                                .foregroundStyle(Color.ink)
+                            Text("Learn, play, and grow with Quack in 5 fun steps!")
+                                .font(.bodyText(14))
+                                .foregroundStyle(Color.inkMuted)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.horizontal, 32).padding(.top, 20)
+                        .opacity(appeared ? 1 : 0)
+                        .animation(.easeOut(duration: 0.35).delay(0.05), value: appeared)
 
-                VStack(spacing: 12) {
-                    ForEach(tips.indices, id: \.self) { i in
-                        let tip = tips[i]
-                        HStack(spacing: 14) {
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(tip.color)
-                                .frame(width: 56, height: 56)
-                                .overlay(
-                                    QuackIcon(name: tip.icon, size: 28, color: .white, strokeWidth: 2.2)
-                                )
-                                .cardShadow()
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(tip.title)
-                                    .font(.display(18, weight: .heavy))
-                                    .foregroundStyle(Color.ink)
-                                Text(tip.body)
-                                    .font(.bodyText(13))
-                                    .foregroundStyle(Color.inkMuted)
-                                    .fixedSize(horizontal: false, vertical: true)
+                        // Connected steps
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(steps.indices, id: \.self) { i in
+                                let s = steps[i]
+                                HStack(alignment: .top, spacing: 16) {
+                                    VStack(spacing: 0) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(s.color.opacity(0.12))
+                                                .frame(width: 52, height: 52)
+                                            Image(systemName: s.symbol)
+                                                .font(.system(size: 22, weight: .semibold))
+                                                .foregroundStyle(s.color)
+                                        }
+                                        if i < steps.count - 1 {
+                                            Rectangle()
+                                                .fill(Color.inkFaint)
+                                                .frame(width: 2, height: 24)
+                                        }
+                                    }
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(s.title)
+                                            .font(.display(16, weight: .heavy))
+                                            .foregroundStyle(Color.ink)
+                                        Text(s.body)
+                                            .font(.bodyText(13))
+                                            .foregroundStyle(Color.inkMuted)
+                                    }
+                                    .padding(.top, 14)
+                                    Spacer()
+                                }
+                                .opacity(appeared ? 1 : 0)
+                                .animation(.easeOut(duration: 0.35).delay(0.1 + Double(i) * 0.06), value: appeared)
                             }
                         }
-                        .padding(16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .quackCard()
+                        .padding(.horizontal, 28)
+                        .padding(.top, 28)
+                        .padding(.bottom, 16)
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
-                .offset(y: appeared ? 0 : 16)
-                .opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: appeared)
 
-                Spacer()
-
-                CTAButton(label: "Start my first mission", variant: .orange, action: onNext)
+                CTAButton(label: "Let's quack!", variant: .orange, action: onNext)
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 32)
-                    .offset(y: appeared ? 0 : 16)
                     .opacity(appeared ? 1 : 0)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.15), value: appeared)
+                    .animation(.easeOut(duration: 0.35).delay(0.4), value: appeared)
+
+                StepDots(current: 3, total: 4)
+                    .padding(.top, 16).padding(.bottom, 32)
+                    .opacity(appeared ? 1 : 0)
             }
-            .scrollableWhenCompact()
         }
-        .onAppear {
-            withAnimation { appeared = true }
-        }
-        .gesture(
-            DragGesture()
-                .onEnded { value in
-                    if value.translation.width > 50 {
-                        triggerSwipeHaptic()
-                        onBack()
-                    }
-                }
-        )
+        .onAppear { appeared = true }
+        .gesture(DragGesture().onEnded { v in
+            if v.translation.width > 50 { triggerSwipeHaptic(); onBack() }
+        })
     }
 }
 
+// MARK: - Shared: step dot indicator
+struct StepDots: View {
+    let current: Int
+    let total: Int
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(0..<total, id: \.self) { i in
+                Capsule()
+                    .fill(i == current ? Color.quackOrange : Color.quackOrange.opacity(0.2))
+                    .frame(width: i == current ? 22 : 8, height: 6)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: current)
+            }
+        }
+    }
+}
+
+#Preview("Splash onboarding") {
+    SplashView(onNext: {})
+        .environment(AppState())
+}
+#Preview("Name") {
+    NameView(initialName: "Alex", initialCodename: "icon-agent-q", onBack: {}, onNext: { _, _ in })
+        .environment(AppState())
+}
+#Preview("Age") {
+    AgeView(initial: 5, onBack: {}, onNext: { _ in })
+        .environment(AppState())
+}
 #Preview("Intro") {
     IntroView(name: "Nia", onBack: {}, onNext: {})
         .environment(AppState())

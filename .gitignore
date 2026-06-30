@@ -19,3 +19,6 @@ xcuserdata/
 # Agent instructions — local only, kept out of the remote
 CLAUDE.md
 AGENTS.md
+
+# Machine-specific build paths (copy LocalPaths.xcconfig.template → LocalPaths.xcconfig)
+xcconfig/LocalPaths.xcconfig
